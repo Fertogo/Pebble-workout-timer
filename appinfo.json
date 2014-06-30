@@ -1,0 +1,18 @@
+{
+    "appKeys": {},
+    "capabilities": [
+        "configurable"
+    ],
+    "companyName": "trujano@mit.edu",
+    "longName": "Custom Workout Timer",
+    "resources": {
+        "media": []
+    },
+    "shortName": "Workout Timer",
+    "uuid": "7dc34dbf-398a-42cb-98fc-5390ad18839e",
+    "versionCode": 1,
+    "versionLabel": "0.1",
+    "watchapp": {
+        "watchface": false
+    }
+}
