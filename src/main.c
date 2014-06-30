@@ -12,12 +12,35 @@ Pause button
 */
 
 #include "pebble.h"
+#include <stdlib.h> 
   
 //Stuff for Menu **** 
 #define NUM_MENU_SECTIONS 1
-#define NUM_FIRST_MENU_ITEMS 3
+  
+
+
+
+
+char *readFromStorage(int key) { 
+  //Read from storage
+  char * total; 
+  total = "Error"; 
+  if (persist_exists(key)){ 
+    persist_read_string(key, total, 20);  
+    APP_LOG(APP_LOG_LEVEL_DEBUG,"Reading from storage");
+    APP_LOG(APP_LOG_LEVEL_DEBUG,total);
+    char * s = total;    
+    return s; 
+  }
+  
+  return "Error";
+  
+}
+  
 
   
+int NUM_FIRST_MENU_ITEMS = 0 ; //# of workout saved by user (Key 1 on internal storage)
+
 static Window *window;
 
 static MenuLayer *menu_layer;
@@ -49,7 +72,7 @@ static void menu_draw_header_callback(GContext* ctx, const Layer *cell_layer, ui
   switch (section_index) {
     case 0:
       // Draw title text in the section header
-      menu_cell_basic_header_draw(ctx, cell_layer, "Add more workouts from your phone!");
+      menu_cell_basic_header_draw(ctx, cell_layer, "Add workouts from phone!");
       break;
 
    /* case 1:
@@ -66,7 +89,7 @@ static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuI
     case 0:
       
     //Replacing switches with for loop to dynamically add items in the future
-    for (int i=0; i<2; i++){ 
+    for (int i=0; i<NUM_FIRST_MENU_ITEMS; i++){ 
       if (cell_index->row == i ){  
           menu_cell_basic_draw(ctx, cell_layer, "Basic Item", "With a subtitle", NULL);
       }
@@ -99,14 +122,26 @@ static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuI
 // Here we capture when a user selects a menu item
 void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data) {
   // Use the row to specify which item will receive the select action
-  
-
+    switch (cell_index->section) {
+    case 0:
+  for (int i=0; i<NUM_FIRST_MENU_ITEMS; i++){ 
+      if (cell_index->row == i ){ 
+        //Convert int to string
+        char buffer[10];
+        snprintf(buffer, 10, "%d", i);  
+        APP_LOG(APP_LOG_LEVEL_DEBUG, buffer);
+        //Open workout #i
+        char *s = readFromStorage(1);
+        APP_LOG(APP_LOG_LEVEL_DEBUG, s ); 
+      }
+    }  
+      break; 
+    } 
 }
 
 
+
 void window_load(Window *window) {
-
-
 
 
   // Now we prepare to initialize the menu layer
@@ -147,8 +182,6 @@ static void timer_callback(void *data) {
       APP_LOG(APP_LOG_LEVEL_DEBUG,"TIMER DONE!");
 }
 
-
-
        enum {
             AKEY_NUMBER,
             AKEY_TEXT,
@@ -175,8 +208,10 @@ void window_unload(Window *window) {
   // Destroy the menu layer
   menu_layer_destroy(menu_layer); } 
 
+
 int main(void) {
-    APP_LOG(APP_LOG_LEVEL_DEBUG,"C Code Started");
+    APP_LOG(APP_LOG_LEVEL_DEBUG,"C Code Started for real");
+    NUM_FIRST_MENU_ITEMS += 3; 
     app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
     app_message_register_inbox_received((AppMessageInboxReceived) in_received_handler);
   
@@ -214,10 +249,7 @@ int main(void) {
   */
   
   //Read from storage
-  char test[20];
-  persist_read_string(1, test, 20);    
-  APP_LOG(APP_LOG_LEVEL_DEBUG,"Reading from storage");
-  APP_LOG(APP_LOG_LEVEL_DEBUG,test);
+
 
   app_event_loop();
 
