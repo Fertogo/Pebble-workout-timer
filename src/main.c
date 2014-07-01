@@ -12,35 +12,44 @@ Pause button
 */
 
 #include "pebble.h"
-#include <stdlib.h> 
+#include<stdlib.h>
+
   
 //Stuff for Menu **** 
 #define NUM_MENU_SECTIONS 1
-  
-
-
-
+int NUM_FIRST_MENU_ITEMS = 0 ; //# of workout saved by user (Key 1 on internal storage)  
 
 char *readFromStorage(int key) { 
-  //Read from storage
   char * total; 
   total = "Error"; 
   if (persist_exists(key)){ 
-    persist_read_string(key, total, 20);  
+    persist_read_string(key, total, 256); //Max Size  
     APP_LOG(APP_LOG_LEVEL_DEBUG,"Reading from storage");
+    //Convert int to string
+        char buffer[10];
+        snprintf(buffer, 10, "%d", key);  
+        APP_LOG(APP_LOG_LEVEL_DEBUG, buffer);
+    
     APP_LOG(APP_LOG_LEVEL_DEBUG,total);
     char * s = total;    
     return s; 
   }
-  
-  return "Error";
-  
+  APP_LOG(APP_LOG_LEVEL_DEBUG,"Reading from storage: Key not found");
+  return "0";  
 }
-  
 
-  
-int NUM_FIRST_MENU_ITEMS = 0 ; //# of workout saved by user (Key 1 on internal storage)
+void createTimer(char* name, char* time) { 
+    APP_LOG(APP_LOG_LEVEL_DEBUG,name);
+  APP_LOG(APP_LOG_LEVEL_DEBUG,time);
+}
 
+void clearMemory() { 
+    for (int i =0; i<NUM_FIRST_MENU_ITEMS; i++ ) { 
+      if (persist_exists(i)) persist_delete(i); 
+    }
+    APP_LOG(APP_LOG_LEVEL_DEBUG,"Memory Cleared Successfully");
+
+}
 static Window *window;
 
 static MenuLayer *menu_layer;
@@ -72,7 +81,7 @@ static void menu_draw_header_callback(GContext* ctx, const Layer *cell_layer, ui
   switch (section_index) {
     case 0:
       // Draw title text in the section header
-      menu_cell_basic_header_draw(ctx, cell_layer, "Add workouts from phone!");
+      menu_cell_basic_header_draw(ctx, cell_layer, "Add timers from phone!");
       break;
 
    /* case 1:
@@ -91,7 +100,10 @@ static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuI
     //Replacing switches with for loop to dynamically add items in the future
     for (int i=0; i<NUM_FIRST_MENU_ITEMS; i++){ 
       if (cell_index->row == i ){  
-          menu_cell_basic_draw(ctx, cell_layer, "Basic Item", "With a subtitle", NULL);
+          char *s = readFromStorage(i+1);//Get Workout Title   **This is called every time the menu is redrawn, could be optimized
+         	
+
+          menu_cell_basic_draw(ctx, cell_layer, s, "With a subtitle", NULL);
       }
     }  
     break; 
@@ -126,13 +138,15 @@ void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *da
     case 0:
   for (int i=0; i<NUM_FIRST_MENU_ITEMS; i++){ 
       if (cell_index->row == i ){ 
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "Button Clicked");
         //Convert int to string
         char buffer[10];
         snprintf(buffer, 10, "%d", i);  
         APP_LOG(APP_LOG_LEVEL_DEBUG, buffer);
-        //Open workout #i
-        char *s = readFromStorage(1);
+        //Get workout #i
+        char *s = readFromStorage(i+1);//Get Workout Title
         APP_LOG(APP_LOG_LEVEL_DEBUG, s ); 
+        //clearMemory(); 
       }
     }  
       break; 
@@ -182,27 +196,54 @@ static void timer_callback(void *data) {
       APP_LOG(APP_LOG_LEVEL_DEBUG,"TIMER DONE!");
 }
 
-       enum {
-            AKEY_NUMBER,
-            AKEY_TEXT,
-        };
-        //Recieve message from js
-        static void in_received_handler(DictionaryIterator *iter, void *context) {
+enum {
+      AKEY_NUMBER,
+      AKEY_TEXT,
+   };
 
-          // Check for fields you expect to receive
-          Tuple *text_tuple = dict_find(iter, AKEY_TEXT);
-          // Act on the found fields received
-          char *message; 
-          message = "Error";
-          if (text_tuple) {  
-            message = text_tuple->value->cstring;
-            APP_LOG(APP_LOG_LEVEL_DEBUG, "Text: %s", message );
-          }
-          
-          //Add message to storage     
-          persist_write_string(1, message);
-          APP_LOG(APP_LOG_LEVEL_DEBUG,"Message Added to Storage!");
-        }
+//Recieve message from js
+static void in_received_handler(DictionaryIterator *iter, void *context) {
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "WatchApp Recieved Message!"); 
+  
+ 
+  // Check for type of message
+    Tuple *text_tuple2 = dict_find(iter, AKEY_NUMBER);
+    char *type; 
+    type = "Error";
+    if (text_tuple2) {  
+      type = text_tuple2->value->cstring;
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Type: %s", type );
+     }
+  // Check for fields you expect to receive
+    Tuple *text_tuple = dict_find(iter, AKEY_TEXT);
+    // Act on the found fields received
+    char *message; 
+    message = "Error";
+    if (text_tuple) {  
+      message = text_tuple->value->cstring;
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Text: %s", message );
+     }
+  
+    if (strcmp(type,"workout") == 0) { 
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "adding workout!");
+        //Add message to storage and increase workout counter 
+        persist_write_string(NUM_FIRST_MENU_ITEMS+1, message); // Add to Totalworkouts +1 
+        APP_LOG(APP_LOG_LEVEL_DEBUG,"Message Added to Storage!");
+      
+        int totalworkouts = atoi(readFromStorage(0));
+        NUM_FIRST_MENU_ITEMS = totalworkouts; //Update NUM_FIRST_MENU_ITEMS
+        //Convert int to string
+        char buffer[10];
+        snprintf(buffer, 10, "%d", NUM_FIRST_MENU_ITEMS+1);  
+        persist_write_string(0, buffer); //Increment workouts
+        APP_LOG(APP_LOG_LEVEL_DEBUG,"Total Workouts %s", buffer);      
+    }
+  
+    else { //It is a Timer. Type = Title, message = duration
+        createTimer(type,message);     
+    }
+  
+ }
 
 void window_unload(Window *window) {
   // Destroy the menu layer
@@ -210,21 +251,13 @@ void window_unload(Window *window) {
 
 
 int main(void) {
-    APP_LOG(APP_LOG_LEVEL_DEBUG,"C Code Started for real");
-    NUM_FIRST_MENU_ITEMS += 3; 
-    app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
-    app_message_register_inbox_received((AppMessageInboxReceived) in_received_handler);
+  APP_LOG(APP_LOG_LEVEL_DEBUG,"C Code Started for real");
   
-  /*
-  window = window_create();
-  window_stack_push(window, true  );
-  Layer *window_layer = window_get_root_layer(window);
-  GRect bounds = layer_get_frame(window_layer);
-  text_layer = text_layer_create(bounds);
-  text_layer_set_text(text_layer, "Waiting for timer...");
-  text_layer_set_font(text_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
-  text_layer_set_text_alignment(text_layer, GTextAlignmentCenter);
-  layer_add_child(window_layer, text_layer_get_layer(text_layer)); */
+  int totalworkouts = atoi(readFromStorage(0));
+  NUM_FIRST_MENU_ITEMS = totalworkouts; 
+  
+  app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
+  app_message_register_inbox_received((AppMessageInboxReceived) in_received_handler);
   
   window = window_create(); 
   // Setup the window handlers
@@ -234,22 +267,17 @@ int main(void) {
   });
   window_stack_push(window, true /* Animated */);
 
-  timer = app_timer_register(1500 /* milliseconds */, timer_callback, NULL);
-  // A timer can be canceled with `app_timer_cancel()`
+
   
     //Send Message
   /*
-  app_message_register_inbox_received(in_received_handler);					 
-	app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());	
+	
 	DictionaryIterator *iter;
  	app_message_outbox_begin(&iter);
  	Tuplet value = TupletInteger(1, 1);
  	dict_write_tuplet(iter, &value);
  	app_message_outbox_send();
   */
-  
-  //Read from storage
-
 
   app_event_loop();
 
