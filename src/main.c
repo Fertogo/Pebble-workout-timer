@@ -17,20 +17,22 @@ static TextLayer *text_layer;
 static AppTimer *timer;
   
 #define NUM_MENU_SECTIONS 1
-int NUM_FIRST_MENU_ITEMS = 0 ; //# of workout saved by user (Key 1 on internal storage)  
+int NUM_FIRST_MENU_ITEMS = 0 ; //# of workout saved by user (Key 1 on internal storage) // Set on main 
+
+char * workout_names[20]; //Save up to 20 workouts
 
 char *readFromStorage(int key) { 
   char * total; 
   total = "Error"; 
   if (persist_exists(key)){ 
     persist_read_string(key, total, 256); //Max Size  
-    APP_LOG(APP_LOG_LEVEL_DEBUG,"Reading from storage");
+    //APP_LOG(APP_LOG_LEVEL_DEBUG,"Reading from storage");
     //Convert int to string
       char buffer[10];
       snprintf(buffer, 10, "%d", key);  
-      APP_LOG(APP_LOG_LEVEL_DEBUG, buffer);
+      //APP_LOG(APP_LOG_LEVEL_DEBUG, "Buffer: %s", buffer);
     
-    APP_LOG(APP_LOG_LEVEL_DEBUG,total);
+    //APP_LOG(APP_LOG_LEVEL_DEBUG,"Total: %s", total);
     char * s = total;    
     return s; 
   }
@@ -88,8 +90,8 @@ static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuI
     case 0:  
     //Replacing switches with for loop to dynamically add items
     for (int i=0; i<NUM_FIRST_MENU_ITEMS; i++){ 
-      if (cell_index->row == i ){  
-          char *s = readFromStorage(i+1);//Get Workout Title   **This is called every time the menu is redrawn, could be optimized
+      if (cell_index->row == i ){     
+          char *s = workout_names[i];//Get Workout Title  
           menu_cell_basic_draw(ctx, cell_layer, s, "Click to start workout!", NULL);
       }
     }  
@@ -191,8 +193,6 @@ void createTimer(char* name, char* time) {  //Creates Timer window
     timer = app_timer_register(1 /* milliseconds */, timer_callback, NULL);     
 }
 
-
-
 enum {
       AKEY_NUMBER,
       AKEY_TEXT,
@@ -257,7 +257,15 @@ int main(void) {
   
   int totalworkouts = atoi(readFromStorage(0));
   NUM_FIRST_MENU_ITEMS = totalworkouts; 
-
+  
+  //Populate workout_names array
+  for (int i = 0; i<totalworkouts; i++) { 
+    char * temp = readFromStorage(i+1); 
+    //workout_names[i] =   temp;   // This does not work because of issues with pointers. (Every element becomes the last)
+    workout_names[i]= malloc(sizeof(char)*(strlen(temp)+1)); // Save workout titles
+    strcpy(workout_names[i],  temp);
+  }  
+   
   app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
   app_message_register_inbox_received((AppMessageInboxReceived) in_received_handler);
   
