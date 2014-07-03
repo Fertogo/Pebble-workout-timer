@@ -70,17 +70,8 @@ Pebble.addEventListener("appmessage",
     else { 
       //console.log("Name was done, about to set another timer with moves: "+ moves + " and counter: "+ counter); 
         if( counter+1 < moves.split(',').length) //If there is at least one move left
-          {   setTimers(moves); }        
+          {   setTimers(moves); } 
+      else sendMessage("end", ""); 
     } 
   }
 );
-
-
-
-
-
-
-
-
-
-

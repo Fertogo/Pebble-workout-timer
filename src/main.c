@@ -1,9 +1,9 @@
-//Custom Workout Timer for Pebble. v 0.5
+//Custom Workout Timer for Pebble. v 0.6
 //By Fernando Trujano
 //    trujano@mit.edu
 // 6/30/2014
 
-//App "technically" but has many bugs and needs optimizations
+//App "technically" works but has many bugs and needs optimizations
 /* Todo: 
 Ability to delete workouts
 Pause button
@@ -238,6 +238,25 @@ static void in_received_handler(DictionaryIterator *iter, void *context) {
     else if (strcmp(type,"end") == 0) { 
         APP_LOG(APP_LOG_LEVEL_DEBUG, "Workout Finished");
         //Show end Card
+        static Window *end_window; 
+        static TextLayer *end_text;
+        static TextLayer *end2_text;
+        end_window = window_create(); 
+        window_stack_push(end_window, true);
+        Layer *end_window_layer = window_get_root_layer(end_window);
+        GRect bounds = layer_get_frame(end_window_layer);
+    
+        end_text = text_layer_create(GRect(0, 10, bounds.size.w /* width */, 28 /* height */));
+        text_layer_set_text(end_text, "Congratulations!");
+        text_layer_set_font(end_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+        text_layer_set_text_alignment(end_text, GTextAlignmentCenter);
+        layer_add_child(end_window_layer, text_layer_get_layer(end_text));
+      
+        end2_text = text_layer_create(GRect(0, 60, bounds.size.w /* width */, 30 /* height */));
+        text_layer_set_text(end2_text, "Workout Finished");
+        text_layer_set_font(end2_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+        text_layer_set_text_alignment(end2_text, GTextAlignmentCenter);
+        layer_add_child(end_window_layer, text_layer_get_layer(end2_text));
     }
   
     else { //It is a Timer. Type = Title, message = duration
@@ -256,6 +275,7 @@ int main(void) {
   APP_LOG(APP_LOG_LEVEL_DEBUG,"C Code Started");
   
   int totalworkouts = atoi(readFromStorage(0));
+
   NUM_FIRST_MENU_ITEMS = totalworkouts; 
   
   //Populate workout_names array
@@ -276,6 +296,23 @@ int main(void) {
   });
   window_stack_push(window, true /* Animated */);
 
+    if (totalworkouts == 0) { 
+        //Show Instructions
+        static Window *ins_window; 
+        static TextLayer *ins_text;
+        static TextLayer *ins2_text;
+        ins_window = window_create(); 
+        window_stack_push(ins_window, true);
+        Layer *ins_window_layer = window_get_root_layer(ins_window);
+        GRect bounds = layer_get_frame(ins_window_layer); 
+        ins_text = text_layer_create(GRect(0, 0, bounds.size.w /* width */, 150 /* height */));
+        text_layer_set_overflow_mode(ins_text, GTextOverflowModeWordWrap ); 
+        text_layer_set_text(ins_text, "Use your phone to add workouts. On the pebble app, find this timer app and click on the settings icon. ");
+        text_layer_set_font(ins_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+        text_layer_set_text_alignment(ins_text, GTextAlignmentLeft);
+        layer_add_child(ins_window_layer, text_layer_get_layer(ins_text));      
+  }
+  
   app_event_loop();
 
   text_layer_destroy(text_layer);
