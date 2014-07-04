@@ -1,11 +1,10 @@
-//Custom Workout Timer for Pebble. v 0.6
+//Custom Workout Timer for Pebble. v 0.7
 //By Fernando Trujano
 //    trujano@mit.edu
 // 6/30/2014
 
 //App "technically" works but has many bugs and needs optimizations
 /* Todo: 
-Ability to delete workouts
 Pause button
 */
 
@@ -15,6 +14,7 @@ Pause button
 static Window *window;
 static TextLayer *text_layer;
 static AppTimer *timer;
+static MenuLayer *menu_layer;
   
 #define NUM_MENU_SECTIONS 1
 int NUM_FIRST_MENU_ITEMS = 0 ; //# of workout saved by user (Key 1 on internal storage) // Set on main 
@@ -40,13 +40,6 @@ char *readFromStorage(int key) {
   return "0";  
 }
 
-void clearMemory() { 
-    for (int i =0; i<NUM_FIRST_MENU_ITEMS; i++ ) { 
-      if (persist_exists(i)) persist_delete(i); 
-    }
-    APP_LOG(APP_LOG_LEVEL_DEBUG,"Memory Cleared Successfully");
-}
-
 void sendMessage(char* message) { 
   DictionaryIterator *iter;
  	app_message_outbox_begin(&iter);
@@ -55,11 +48,40 @@ void sendMessage(char* message) {
   APP_LOG(APP_LOG_LEVEL_DEBUG,"Message \"%s\" sent to phone", message);
 }
 
+static void deleteFromStorage(int key){ 
+    if (persist_exists(key)){
+        char s1[12] = "delete,";
+        char * s2 = readFromStorage(key);
+        strcat(s1,s2);
+        sendMessage(s1);  
+      
+        persist_delete(key); //Delete workout 
+        
+        for (int i = key; i < NUM_FIRST_MENU_ITEMS; i++){ 
+          persist_write_string(i, readFromStorage(i+1)); //Re-arrange memory   
+          APP_LOG(APP_LOG_LEVEL_DEBUG,"Setting workout: '%s' from key %i to %i", readFromStorage(i+1), i+1, i);    
+        }
+        //Convert int to string    
+        char buffer[10];
+        snprintf(buffer, 10, "%d", atoi(readFromStorage(0))-1);  
+        persist_write_string(0, buffer); //Decrease workouts by one  
+        APP_LOG(APP_LOG_LEVEL_DEBUG,"Key %i deleted from storage", key);   
+        menu_layer_reload_data(menu_layer); //Reload the menu **(doesn't seem to work)
+    }
+  
+  else APP_LOG(APP_LOG_LEVEL_DEBUG,"Delete from storage: Key %i not found", key);
+}
+
+void clearMemory() { 
+    for (int i =0; i<NUM_FIRST_MENU_ITEMS; i++ ) { 
+      deleteFromStorage(i); 
+    }
+    APP_LOG(APP_LOG_LEVEL_DEBUG,"Memory Cleared Successfully");
+}
+
 static Window *window;
 
 //Stuff for Menu **** 
-static MenuLayer *menu_layer;
-
 static uint16_t menu_get_num_sections_callback(MenuLayer *menu_layer, void *data) {
   return NUM_MENU_SECTIONS;
 }
@@ -106,14 +128,37 @@ void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *da
     case 0:
   for (int i=0; i<NUM_FIRST_MENU_ITEMS; i++){ 
       if (cell_index->row == i ){ 
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "Button Clicked");
-        //Convert int to string
-          char buffer[10];
-          snprintf(buffer, 10, "%d", i);  
-          APP_LOG(APP_LOG_LEVEL_DEBUG, buffer);
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "Button Clicked: %i", i);
         char *workout = readFromStorage(i+1);//Get Workout Title
         sendMessage(workout); 
         //clearMemory(); 
+      }
+    }  
+      break; 
+    } 
+}
+
+//When user long click son a menu Item - aka deletes item
+void menu_long_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data) {
+  // Use the row to specify which item will receive the select action
+    switch (cell_index->section) {
+    case 0:
+  for (int i=0; i<NUM_FIRST_MENU_ITEMS; i++){ 
+      if (cell_index->row == i ){ 
+        static Window *del_window; 
+        static TextLayer *del_text;
+        del_window = window_create(); 
+        window_stack_push(del_window, true);
+        Layer *del_window_layer = window_get_root_layer(del_window);
+        GRect bounds = layer_get_frame(del_window_layer); 
+        del_text = text_layer_create(GRect(0, 0, bounds.size.w /* width */, 150 /* height */));
+        text_layer_set_text(del_text, "Workout deleted.");
+        text_layer_set_font(del_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+        text_layer_set_text_alignment(del_text, GTextAlignmentLeft);
+        layer_add_child(del_window_layer, text_layer_get_layer(del_text)); 
+   
+        deleteFromStorage(i+1); 
+        menu_layer_reload_data(menu_layer); 
       }
     }  
       break; 
@@ -134,6 +179,7 @@ void window_load(Window *window) {
     .draw_header = menu_draw_header_callback,
     .draw_row = menu_draw_row_callback,
     .select_click = menu_select_callback,
+    .select_long_click = menu_long_select_callback, 
   });
 
   // Bind the menu layer's click config provider to the window for interactivity
@@ -202,7 +248,7 @@ enum {
 static void in_received_handler(DictionaryIterator *iter, void *context) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "WatchApp Recieved Message!"); 
   
-  // Check for type of message
+    // Check for type of message
     Tuple *text_tuple2 = dict_find(iter, AKEY_NUMBER);
     char *type; 
     type = "Error";
@@ -210,7 +256,7 @@ static void in_received_handler(DictionaryIterator *iter, void *context) {
       type = text_tuple2->value->cstring;
       APP_LOG(APP_LOG_LEVEL_DEBUG, "Type: %s", type );
      }
-  // Check for fields you expect to receive
+    // Check for fields you expect to receive
     Tuple *text_tuple = dict_find(iter, AKEY_TEXT);
     // Act on the found fields received
     char *message; 
@@ -232,7 +278,8 @@ static void in_received_handler(DictionaryIterator *iter, void *context) {
         char buffer[10];
         snprintf(buffer, 10, "%d", NUM_FIRST_MENU_ITEMS+1);  
         persist_write_string(0, buffer); //Increment workouts
-        APP_LOG(APP_LOG_LEVEL_DEBUG,"Total Workouts %s", buffer);      
+        APP_LOG(APP_LOG_LEVEL_DEBUG,"Total Workouts %s", buffer); 
+        if (atoi(buffer) > 1) menu_layer_reload_data(menu_layer);
     }
   
     else if (strcmp(type,"end") == 0) { 
@@ -275,7 +322,6 @@ int main(void) {
   APP_LOG(APP_LOG_LEVEL_DEBUG,"C Code Started");
   
   int totalworkouts = atoi(readFromStorage(0));
-
   NUM_FIRST_MENU_ITEMS = totalworkouts; 
   
   //Populate workout_names array
@@ -288,19 +334,11 @@ int main(void) {
    
   app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
   app_message_register_inbox_received((AppMessageInboxReceived) in_received_handler);
-  
-  window = window_create(); 
-  window_set_window_handlers(window, (WindowHandlers) {
-    .load = window_load,
-    .unload = window_unload,
-  });
-  window_stack_push(window, true /* Animated */);
-
-    if (totalworkouts == 0) { 
+ 
+  if (totalworkouts == 0) { 
         //Show Instructions
         static Window *ins_window; 
         static TextLayer *ins_text;
-        static TextLayer *ins2_text;
         ins_window = window_create(); 
         window_stack_push(ins_window, true);
         Layer *ins_window_layer = window_get_root_layer(ins_window);
@@ -310,11 +348,19 @@ int main(void) {
         text_layer_set_text(ins_text, "Use your phone to add workouts. On the pebble app, find this timer app and click on the settings icon. ");
         text_layer_set_font(ins_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
         text_layer_set_text_alignment(ins_text, GTextAlignmentLeft);
-        layer_add_child(ins_window_layer, text_layer_get_layer(ins_text));      
+        layer_add_child(ins_window_layer, text_layer_get_layer(ins_text)); 
   }
   
-  app_event_loop();
+  else{
+      window = window_create(); 
+      window_set_window_handlers(window, (WindowHandlers) {
+        .load = window_load,
+        .unload = window_unload,
+      });
+      window_stack_push(window, true /* Animated */);
+  }
 
+  app_event_loop();
   text_layer_destroy(text_layer);
   window_destroy(window);
 }

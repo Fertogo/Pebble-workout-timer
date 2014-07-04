@@ -58,15 +58,23 @@ Pebble.addEventListener("webviewclosed",
 
 //Recieve message from Pebble
 var moves = "";
+
 Pebble.addEventListener("appmessage",
   function(e) {
     console.log("Received message: " + e.payload[1]); 
+    
+    if(e.payload[1].split(',')[0]=="delete") { 
+      //Remove workout from internal storage
+      window.localStorage.removeItem(e.payload[1].split(',')[1]); 
+      console.log("Deleted item from storage:"+ e.payload[1].split(',')[1]);
+    }
   
-    if (e.payload[1] != "done"){ //Begin Workout     
+    else if (e.payload[1] != "done"){ //Begin Workout     
         moves = window.localStorage.getItem(e.payload[1]);
         counter = 0; //Reset counter
         setTimers(moves);      
     }
+
     else { 
       //console.log("Name was done, about to set another timer with moves: "+ moves + " and counter: "+ counter); 
         if( counter+1 < moves.split(',').length) //If there is at least one move left
