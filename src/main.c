@@ -1,11 +1,11 @@
-//Custom Workout Timer for Pebble. v 0.7
+//Custom Workout Timer for Pebble. v 0.9
 //By Fernando Trujano
 //    trujano@mit.edu
 // 6/30/2014
 
 //App "technically" works but has many bugs and needs optimizations
 /* Todo: 
-Pause button
+
 */
 
 #include "pebble.h"
@@ -26,12 +26,7 @@ char *readFromStorage(int key) {
   total = "Error"; 
   if (persist_exists(key)){ 
     persist_read_string(key, total, 256); //Max Size  
-    //APP_LOG(APP_LOG_LEVEL_DEBUG,"Reading from storage");
-    //Convert int to string
-      char buffer[10];
-      snprintf(buffer, 10, "%d", key);  
-      //APP_LOG(APP_LOG_LEVEL_DEBUG, "Buffer: %s", buffer);
-    
+    //APP_LOG(APP_LOG_LEVEL_DEBUG,"Reading from storage");  
     //APP_LOG(APP_LOG_LEVEL_DEBUG,"Total: %s", total);
     char * s = total;    
     return s; 
@@ -65,19 +60,33 @@ static void deleteFromStorage(int key){
         char buffer[10];
         snprintf(buffer, 10, "%d", atoi(readFromStorage(0))-1);  
         persist_write_string(0, buffer); //Decrease workouts by one  
-        APP_LOG(APP_LOG_LEVEL_DEBUG,"Key %i deleted from storage", key);   
-        menu_layer_reload_data(menu_layer); //Reload the menu **(doesn't seem to work)
+        APP_LOG(APP_LOG_LEVEL_DEBUG,"Key %i deleted from storage", key);        
     }
   
   else APP_LOG(APP_LOG_LEVEL_DEBUG,"Delete from storage: Key %i not found", key);
 }
 
+//Do not use, broken atm
 void clearMemory() { 
     for (int i =0; i<NUM_FIRST_MENU_ITEMS; i++ ) { 
-      deleteFromStorage(i); 
+      persist_delete(i); //Delete workout
     }
     APP_LOG(APP_LOG_LEVEL_DEBUG,"Memory Cleared Successfully");
 }
+
+void updateMenu(){ 
+  NUM_FIRST_MENU_ITEMS = atoi(readFromStorage(0));
+  //Populate workout_names array
+  for (int i = 0; i<NUM_FIRST_MENU_ITEMS; i++) { 
+    char * temp = readFromStorage(i+1); 
+    //workout_names[i] =   temp;   // This does not work because of issues with pointers. (Every element becomes the last)
+    workout_names[i]= malloc(sizeof(char)*(strlen(temp)+1)); // Save workout titles
+    strcpy(workout_names[i],  temp);
+  }  
+  menu_layer_reload_data(menu_layer); //Reload the menu 
+  vibes_short_pulse(); 
+}
+
 
 static Window *window;
 
@@ -108,6 +117,7 @@ static void menu_draw_header_callback(GContext* ctx, const Layer *cell_layer, ui
 }
 
 static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Drawing Menu...");
   switch (cell_index->section) {
     case 0:  
     //Replacing switches with for loop to dynamically add items
@@ -138,27 +148,15 @@ void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *da
     } 
 }
 
-//When user long click son a menu Item - aka deletes item
+//When user long clicks on a menu Item - aka deletes item
 void menu_long_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data) {
   // Use the row to specify which item will receive the select action
     switch (cell_index->section) {
     case 0:
   for (int i=0; i<NUM_FIRST_MENU_ITEMS; i++){ 
-      if (cell_index->row == i ){ 
-        static Window *del_window; 
-        static TextLayer *del_text;
-        del_window = window_create(); 
-        window_stack_push(del_window, true);
-        Layer *del_window_layer = window_get_root_layer(del_window);
-        GRect bounds = layer_get_frame(del_window_layer); 
-        del_text = text_layer_create(GRect(0, 0, bounds.size.w /* width */, 150 /* height */));
-        text_layer_set_text(del_text, "Workout deleted.");
-        text_layer_set_font(del_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
-        text_layer_set_text_alignment(del_text, GTextAlignmentLeft);
-        layer_add_child(del_window_layer, text_layer_get_layer(del_text)); 
-   
+      if (cell_index->row == i ){  
         deleteFromStorage(i+1); 
-        menu_layer_reload_data(menu_layer); 
+        updateMenu(); 
       }
     }  
       break; 
@@ -192,8 +190,15 @@ void window_load(Window *window) {
 
 int timer_time = 0; 
 static TextLayer *timer_text; 
+static TextLayer *paused_text; 
 char * time_str = "";
 
+static void time_window_disappear(Window *window){ 
+    // Cancel the timer
+    APP_LOG(APP_LOG_LEVEL_DEBUG,"Timer Window Disappeared"); 
+    app_timer_cancel(timer); 
+
+}
 //Called every one second
 static void timer_callback(void *data) {
       if (timer_time==0) { 
@@ -212,6 +217,25 @@ static void timer_callback(void *data) {
       }
 }
 
+//Pause the timer 
+bool paused = false; 
+void pause_click_handler(ClickRecognizerRef recognizer, void *context) { 
+    APP_LOG(APP_LOG_LEVEL_DEBUG,"Pause Button clicked"); 
+  if (paused) { 
+    text_layer_set_text(paused_text, "\0"); //Empty String
+    timer = app_timer_register(1000 /* milliseconds */, timer_callback, NULL);
+    paused = false; 
+  } 
+  else { 
+    app_timer_cancel(timer);
+    text_layer_set_text(paused_text, "Paused");
+    paused = true; 
+  }
+}
+
+void timerwindow_config_provider(Window * window){ 
+    window_single_repeating_click_subscribe(BUTTON_ID_SELECT, 1000, pause_click_handler);
+}
 //Create Timer Function 
 static Window *timer_window; 
 static TextLayer *title_text; 
@@ -219,6 +243,11 @@ void createTimer(char* name, char* time) {  //Creates Timer window
     APP_LOG(APP_LOG_LEVEL_DEBUG,"Creating Timer with name: %s and time: %s",name, time); 
     
     timer_window = window_create(); 
+      window_set_window_handlers(timer_window, (WindowHandlers) {
+        .disappear = time_window_disappear,
+      });
+  
+    window_set_click_config_provider(timer_window, (ClickConfigProvider) timerwindow_config_provider);
     window_stack_push(timer_window, true);
     Layer *timer_window_layer = window_get_root_layer(timer_window);
     GRect bounds = layer_get_frame(timer_window_layer);
@@ -235,9 +264,21 @@ void createTimer(char* name, char* time) {  //Creates Timer window
     text_layer_set_text_alignment(timer_text, GTextAlignmentCenter);
     layer_add_child(timer_window_layer, text_layer_get_layer(timer_text));
   
+    paused_text = text_layer_create(GRect(0, 120, bounds.size.w /* width */, 30 /* height */));
+    text_layer_set_text(paused_text, "\0"); //Empty String
+    text_layer_set_font(paused_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+    text_layer_set_text_alignment(paused_text, GTextAlignmentCenter);
+    layer_add_child(timer_window_layer, text_layer_get_layer(paused_text));
+  
     timer_time = atoi(time);
     timer = app_timer_register(1 /* milliseconds */, timer_callback, NULL);     
 }
+
+void window_unload(Window *window) {
+  app_timer_cancel(timer);
+  // Destroy the menu layer
+  menu_layer_destroy(menu_layer); 
+} 
 
 enum {
       AKEY_NUMBER,
@@ -279,7 +320,16 @@ static void in_received_handler(DictionaryIterator *iter, void *context) {
         snprintf(buffer, 10, "%d", NUM_FIRST_MENU_ITEMS+1);  
         persist_write_string(0, buffer); //Increment workouts
         APP_LOG(APP_LOG_LEVEL_DEBUG,"Total Workouts %s", buffer); 
-        if (atoi(buffer) > 1) menu_layer_reload_data(menu_layer);
+        if (atoi(buffer) > 1) updateMenu();
+        else { 
+          window = window_create(); 
+          window_set_window_handlers(window, (WindowHandlers) {
+            .load = window_load,
+            .unload = window_unload,
+          });
+          window_stack_push(window, true /* Animated */);
+          updateMenu(); 
+        }
     }
   
     else if (strcmp(type,"end") == 0) { 
@@ -304,6 +354,8 @@ static void in_received_handler(DictionaryIterator *iter, void *context) {
         text_layer_set_font(end2_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
         text_layer_set_text_alignment(end2_text, GTextAlignmentCenter);
         layer_add_child(end_window_layer, text_layer_get_layer(end2_text));
+      
+        vibes_double_pulse(); 
     }
   
     else { //It is a Timer. Type = Title, message = duration
@@ -312,20 +364,17 @@ static void in_received_handler(DictionaryIterator *iter, void *context) {
     } 
  }
 
-void window_unload(Window *window) {
-  app_timer_cancel(timer);
-  // Destroy the menu layer
-  menu_layer_destroy(menu_layer); 
-} 
-
 int main(void) {
   APP_LOG(APP_LOG_LEVEL_DEBUG,"C Code Started");
-  
-  int totalworkouts = atoi(readFromStorage(0));
+  if (!persist_exists(0)) { 
+        APP_LOG(APP_LOG_LEVEL_DEBUG,"First time using app");
+        persist_write_string(0, "0"); //Increment workouts
+  }
+
+  //Menu data
+  int totalworkouts = atoi(readFromStorage(0)); 
   NUM_FIRST_MENU_ITEMS = totalworkouts; 
-  
-  //Populate workout_names array
-  for (int i = 0; i<totalworkouts; i++) { 
+  for (int i = 0; i<totalworkouts; i++) { //Populate workout_names array
     char * temp = readFromStorage(i+1); 
     //workout_names[i] =   temp;   // This does not work because of issues with pointers. (Every element becomes the last)
     workout_names[i]= malloc(sizeof(char)*(strlen(temp)+1)); // Save workout titles
