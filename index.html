@@ -1,0 +1,56 @@
+
+
+<html> 
+    <head> 
+        <script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+    </head> 
+
+    <body> 
+        <h1>Custom Workout Timer</h1> 
+
+        <form id="settings"> 
+            Workout Title: <input type="text" name="title" id="title"> <br> 
+            Add Workout: <input type="text" id="workout-name"> Time: <input type="text" id="workout-time"> <button type="button" id="add-move"> Add Workout </button> <br> 
+        </form> 
+
+        <ol id="workout-list"> </ol> 
+
+        <button id = "save-btn"> Savee </button> 
+
+        <script>
+            //Add option to remove workouts
+
+            $(document).ready(function(){
+                var workout = {};
+                workout["moves"]= []; 
+                
+                
+                $("#add-move").click(function(){
+                    var move = $("#workout-name").val();
+                    var time = $("#workout-time").val();
+                                      
+                    $("#workout-list").append("<li>" + move+ ":" + time + "</li>");
+
+                    workout["moves"].push([move, time])
+
+                    console.log("appended " + title)
+                    console.log(workout)
+                })
+
+                $("#save-btn").click(function() {
+                    workout["title"] = $("#title").val()
+                    document.location = "pebblejs://close#" + encodeURIComponent(JSON.stringify(workout))    
+                })
+                
+            })
+
+
+            //With Javascript, not used anymore
+            //function save() { 
+                // var title = document.getElementById("settings").title.value
+            //    window.location.href = "pebblejs://close#" + title
+            //}
+        </script> 
+    </body> 
+
+</html> 
