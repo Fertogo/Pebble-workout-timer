@@ -1,12 +1,7 @@
-//Custom Workout Timer for Pebble. v 0.9
+//Custom Workout Timer for Pebble. v 1.0
 //By Fernando Trujano
 //    trujano@mit.edu
 // 6/30/2014
-
-//App "technically" works but has many bugs and needs optimizations
-/* Todo: 
-
-*/
 
 #include "pebble.h"
 #include<stdlib.h>
@@ -45,28 +40,28 @@ void sendMessage(char* message) {
 
 static void deleteFromStorage(int key){ 
     if (persist_exists(key)){
-        char s1[12] = "delete,";
-        char * s2 = readFromStorage(key);
-        strcat(s1,s2);
-        sendMessage(s1);  
+      char s1[12] = "delete,";
+      char * s2 = readFromStorage(key);
+      strcat(s1,s2);
+      sendMessage(s1);  
       
-        persist_delete(key); //Delete workout 
+      persist_delete(key); //Delete workout 
         
-        for (int i = key; i < NUM_FIRST_MENU_ITEMS; i++){ 
-          persist_write_string(i, readFromStorage(i+1)); //Re-arrange memory   
-          APP_LOG(APP_LOG_LEVEL_DEBUG,"Setting workout: '%s' from key %i to %i", readFromStorage(i+1), i+1, i);    
-        }
-        //Convert int to string    
-        char buffer[10];
-        snprintf(buffer, 10, "%d", atoi(readFromStorage(0))-1);  
-        persist_write_string(0, buffer); //Decrease workouts by one  
-        APP_LOG(APP_LOG_LEVEL_DEBUG,"Key %i deleted from storage", key);        
+      for (int i = key; i < NUM_FIRST_MENU_ITEMS; i++){ 
+        persist_write_string(i, readFromStorage(i+1)); //Re-arrange memory   
+        APP_LOG(APP_LOG_LEVEL_DEBUG,"Setting workout: '%s' from key %i to %i", readFromStorage(i+1), i+1, i);    
+      }
+      //Convert int to string    
+      char buffer[10];
+      snprintf(buffer, 10, "%d", atoi(readFromStorage(0))-1);  
+      persist_write_string(0, buffer); //Decrease workouts by one  
+      APP_LOG(APP_LOG_LEVEL_DEBUG,"Key %i deleted from storage", key);    
+      
     }
   
-  else APP_LOG(APP_LOG_LEVEL_DEBUG,"Delete from storage: Key %i not found", key);
+    else APP_LOG(APP_LOG_LEVEL_DEBUG,"Delete from storage: Key %i not found", key);
 }
 
-//Do not use, broken atm
 void clearMemory() { 
     for (int i =0; i<NUM_FIRST_MENU_ITEMS; i++ ) { 
       persist_delete(i); //Delete workout
@@ -86,7 +81,6 @@ void updateMenu(){
   menu_layer_reload_data(menu_layer); //Reload the menu 
   vibes_short_pulse(); 
 }
-
 
 static Window *window;
 
@@ -134,33 +128,33 @@ static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuI
 // Here we capture when a user selects a menu item
 void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data) {
   // Use the row to specify which item will receive the select action
-    switch (cell_index->section) {
+  switch (cell_index->section) {
     case 0:
-  for (int i=0; i<NUM_FIRST_MENU_ITEMS; i++){ 
-      if (cell_index->row == i ){ 
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "Button Clicked: %i", i);
-        char *workout = readFromStorage(i+1);//Get Workout Title
-        sendMessage(workout); 
-        //clearMemory(); 
-      }
-    }  
+      for (int i=0; i<NUM_FIRST_MENU_ITEMS; i++){ 
+          if (cell_index->row == i ){ 
+            APP_LOG(APP_LOG_LEVEL_DEBUG, "Button Clicked: %i", i);
+            char *workout = readFromStorage(i+1);//Get Workout Title
+            sendMessage(workout); 
+            //clearMemory(); 
+          }
+      }  
       break; 
-    } 
+  } 
 }
 
 //When user long clicks on a menu Item - aka deletes item
 void menu_long_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data) {
   // Use the row to specify which item will receive the select action
-    switch (cell_index->section) {
+  switch (cell_index->section) {
     case 0:
-  for (int i=0; i<NUM_FIRST_MENU_ITEMS; i++){ 
-      if (cell_index->row == i ){  
-        deleteFromStorage(i+1); 
-        updateMenu(); 
-      }
-    }  
+      for (int i=0; i<NUM_FIRST_MENU_ITEMS; i++){ 
+          if (cell_index->row == i ){  
+            deleteFromStorage(i+1); 
+            updateMenu(); 
+          }
+      }  
       break; 
-    } 
+  } 
 }
 
 void window_load(Window *window) {
@@ -194,9 +188,9 @@ static TextLayer *paused_text;
 char * time_str = "";
 
 static void time_window_disappear(Window *window){ 
-    // Cancel the timer
-    APP_LOG(APP_LOG_LEVEL_DEBUG,"Timer Window Disappeared"); 
-    app_timer_cancel(timer); 
+  // Cancel the timer
+  APP_LOG(APP_LOG_LEVEL_DEBUG,"Timer Window Disappeared"); 
+  app_timer_cancel(timer); 
 
 }
 //Called every one second

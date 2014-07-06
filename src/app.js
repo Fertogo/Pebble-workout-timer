@@ -2,7 +2,7 @@
 //By Fernando Trujano
 //    trujano@mit.edu
 // 6/30/2014
-
+var version = "1.0";
 //Sends workouts to watch app using Pebble.sendAppMesssage
 
 var counter = 0; 
@@ -33,7 +33,7 @@ Pebble.addEventListener("ready", function(e){
 
 Pebble.addEventListener("showConfiguration", function(){ 
   console.log("Showing Configuration");
-  Pebble.openURL("http://www.fernandotrujano.com/pebble");
+  Pebble.openURL("http://www.fernandotrujano.com/pebble?ver="+version);
 });
 
 //After Closing settings view

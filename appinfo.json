@@ -6,7 +6,14 @@
     "companyName": "trujano@mit.edu",
     "longName": "Workout Timer",
     "resources": {
-        "media": []
+        "media": [
+            {
+                "file": "images/menuicon.png",
+                "menuIcon": true,
+                "name": "MENU_ICON",
+                "type": "png"
+            }
+        ]
     },
     "shortName": "Workout Timer",
     "uuid": "2add7054-08bc-4dda-b4d8-28f22f3d7ec2",
