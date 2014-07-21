@@ -1,0 +1,146 @@
+<!-- 
+    Pebble Workout timer. By Fernando Trujano
+    trujano@mit.edu
+    Beginnings of v2.0. Let's users see and edit workouts online. 
+--> 
+
+<html>
+    <head>
+        <link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.3/jquery.mobile-1.4.3.min.css" />
+        <script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+        <script src="http://code.jquery.com/mobile/1.4.3/jquery.mobile-1.4.3.min.js"></script>
+        <style>
+            .error{ 
+                text-align: center; 
+                background-color: rgba(255, 0,0,.2);
+                padding: 3px;
+            }
+
+            a:link {
+                text-decoration: none;
+             }
+         </style> 
+    </head>
+
+    <body>
+        <div data-role="page" id="settings" data-url="settings" class="">
+
+            <div data-role="content"> 
+
+                
+                <div id="response"> </div> 
+                <div data-role="collapsibleset" data-content-theme="a" data-iconpos="left" data-collapsed-icon="carat-d" data-expanded-icon="carat-u" id="workout-list">
+
+                </div> 
+                <button id="save"> Save </button> 
+
+
+            </div> 
+            
+            <div data-role="popup" id="edit-popup" data-theme="a" class="ui-corner-all ui-content">
+                <h3> <small> Edit Move <small> </h3> 
+                <form> 
+                    <input type="text" data-clear-btn="true" name="edit-title" id="edit-title" value="5">
+                    <label for="slider-2">Minutes</label> 
+                    <input type="range"  id="edit-minute-slider" data-highlight="true" min="0" max="60" value="5"> 
+                    <label for="slider-2">Seconds</label> <input type="range"  id="edit-second-slider" data-highlight="true" min="0" max="60" value="5"> 
+                </form> 
+                
+                <fieldset class="ui-grid-a">
+                    <div class="ui-block-a" >  <a href="#" data-rel="back"><button id = "edit-cancel-btn" data-theme="d" data-icon="delete" > Cancel </button> </a> </div> 
+                    <div class="ui-block-b" > <a href="#" data-rel="back"><button id = "edit-save-btn" data-theme="b" data-icon="check"> Edit Workout</button> </a> </div> 
+                </fieldset>
+            </div> 
+
+        </div> 
+
+
+    </body>
+    <script> 
+        var token = "testtoken"; 
+        //Open user file 
+        var jsonstring = false
+        var json; 
+
+        $(document).ready(function(){ 
+
+            $.ajax({
+              url:'read.php?token='+ token,
+              complete: function (response) {
+                if (response.responseText){
+                    console.log("got a response! "); 
+                    jsonstring = response.responseText.replace(/\\"/g, '"');; //Unescape escaped ""
+                    json = $.parseJSON(jsonstring); 
+
+                    //Populate HTML
+                    $.each(json.workouts, function(i, workout) {  
+                        $("#workout-list").append('<div data-role="collapsible" > <h4>'+ workout.title + '</h4> <ul class="move-list" id="' + workout.title+'" data-role="listview">'); 
+                        $.each(workout.moves, function(j, move){ 
+                            $("#"+workout.title).append('<li> '+move[0]+' : ' + move[1]+'  <a href="#edit-popup" id="'+ i + ','+j+ '" class="editlink" data-rel="popup" data-position-to="window" data-transition="slidedown"> Settings </a> </li>  ')
+                        })
+                         $("#workout-list").append('</ul> </div>');                    
+                    })
+
+                    //Refresh
+                    $('#workout-list').collapsibleset().collapsibleset('refresh');
+                    $('.move-list').listview().listview('refresh');
+                }
+              },
+              error: function () {
+                  console.log("Something went wrong. Can't connect")
+              },
+          });
+
+
+            $(document).on('click', '.editlink', function(){
+                console.log("click"); 
+                var id = this.id.replace(/id/,'').split(','); 
+                console.log(id); 
+                var move = json.workouts[id[0]].moves[id[1]]   
+
+                $("#edit-title").val(move[0]); 
+                $("#edit-minute-slider").val((move[1] - move[1]%60)/60); 
+                $("#edit-second-slider").val(move[1]%60); 
+
+                $("#edit-second-slider").slider("refresh"); 
+                $("#edit-minute-slider").slider("refresh"); 
+                $("#second-slider").slider("refresh"); 
+
+                $("#edit-save-btn").val(id[0]+','+id[1])
+            })
+
+            $("#save").click(function() { 
+                //Submit json file to server
+                var data = new FormData();
+                var jsonsend = ' {"workouts":[{"title":"Title","moves":[["Move 1",60],["Move 2",15]]},{"title":"Title2","moves":[["Move 1 for 2",60],["Move 2 for 2",15]]}]} '; 
+                data.append("data" , jsonsend);
+                var xhr = (window.XMLHttpRequest) ? new XMLHttpRequest() : new activeXObject("Microsoft.XMLHTTP");
+                xhr.open( 'post', 'save.php?token='+token, true );
+                xhr.send(data);
+                console.log("Data sent to php"); 
+            })
+
+            $("#edit-save-btn").click(function(){ 
+                //Edit json
+                var id = $(this).val().split(','); 
+                var title = $("#edit-title").val()
+                console.log(title); 
+                var mins = $("#edit-minute-slider").val(); 
+                var secs = $("#edit-second-slider").val(); 
+                if (title != "" && (mins > 0 || secs >0)) {          
+                    var time = (parseInt(mins)*60)+parseInt(secs)       
+                    json.workouts[id[0]].moves[id[1]] = [title , time]; 
+                    console.log("Edited"); 
+
+                    
+                }
+                console.log(id)
+
+            })
+
+        })
+
+ 
+
+    </script> 
+</html>
