@@ -23,76 +23,225 @@
     </head>
 
     <body>
-        <div data-role="page" id="settings" data-url="settings" class="">
+        <div data-role="page" id="main">
+
+            <div data-role="content"> 
+                <div class="error" id="update" hidden><strong> There is an update for this app available on the Pebble appstore. </strong> </div>
+                <h2>Manage Workouts <a href="#info" data-transition="flip"><button data-inline="true" data-mini="true" data-icon="info"> FAQ </button></a></h2> 
+                <div data-role="collapsibleset" data-content-theme="a" data-iconpos="left" data-collapsed-icon="carat-d" data-expanded-icon="carat-u" id="workout-list"> 
+                </div> 
+                <a href="#add"><button data-inline="true" data-mini="true" data-icon="plus"> Add Workout </button></a> 
+                <hr> 
+                <fieldset class="ui-grid-a">
+                    <div class="ui-block-a" >  <a href="#" data-rel="back"><button id = "cancel-btn" data-theme="d" data-icon="delete" > Cancel </button> </a> </div> 
+                    <div class="ui-block-b" > <button id = "save-btn" class="ui-btn-active" data-icon="check"> Save</button>  </div> 
+                </fieldset>
+
+
+            </div> 
+        </div> 
+
+        <!-- FAQ Page --> 
+        <style> 
+            .ui-li-desc{ 
+                overflow: visible;
+                white-space: normal;
+            }
+        </style>
+        <div data-role="page" id="info">
+            <h3> <a href="#main" data-transition="flip"><button data-inline="true" data-mini="true" data-icon="back"> Back</button></a> Frequently Asked Questions </h1> 
+            <ul data-role="listview"> 
+                <li> <div class="ui-li-heading"> How do I add a workout? </div>  <p class ="ui-li-desc"> On the Pebble app, find this app and click on the settings icon. Type in a workout title and add moves by using the sliders and textbox. You can add as many moves as you want.  When you are done, click on Add workout. The workout should appear on your Pebble. </p>  </li> 
+                <li> <div class="ui-li-heading"> How do I delete a workout? </div>  <p class ="ui-li-desc"> On the Pebble app, with the workout selected, press and hold the middle button. The pebble should vibrate and the workout should dissapear. </p>  </li> 
+                <li> <div class="ui-li-heading"> How do I pause/resume a timer? </div>  <p class ="ui-li-desc"> While a timer is running, simply press the middle button to pause or resume. </p>  </li> 
+                 <li> <div class="ui-li-heading">Can I suggest a new feature? </div>  <p class ="ui-li-desc"> Yes, please. That would be awesome. If you have any ideas to improve this app, or ideas for another app please email me at <a href="mailto:trujano.fernando@gmail.com?subject=App Suggestion"> trujano.fernando@gmail.com </a>  </p>  </li>                
+                <li> <div class="ui-li-heading"> Something went wrong!</div>  <p class ="ui-li-desc"> That is not a question. If you think you found a bug, please <a href="mailto:trujano.fernando@gmail.com?subject=Custom Workout Timer bug!"> email </a> me the details. Uninstalling and reinsalling the app might solve your problem for now.  </p>  </li> 
+            </ul> 
+        </div> 
+
+        <!-- Add workout page --> 
+        <div data-role="page" id="add">
 
             <div data-role="content"> 
 
-                
-                <div id="response"> </div> 
-                <div data-role="collapsibleset" data-content-theme="a" data-iconpos="left" data-collapsed-icon="carat-d" data-expanded-icon="carat-u" id="workout-list">
-
-                </div> 
-                <button id="save"> Save </button> 
-
-
-            </div> 
+                <h2>Add a custom timer </h2>  
             
-            <div data-role="popup" id="edit-popup" data-theme="a" class="ui-corner-all ui-content">
-                <h3> <small> Edit Move <small> </h3> 
-                <form> 
-                    <input type="text" data-clear-btn="true" name="edit-title" id="edit-title" value="5">
-                    <label for="slider-2">Minutes</label> 
-                    <input type="range"  id="edit-minute-slider" data-highlight="true" min="0" max="60" value="5"> 
-                    <label for="slider-2">Seconds</label> <input type="range"  id="edit-second-slider" data-highlight="true" min="0" max="60" value="5"> 
+                <form id="settings"> 
+                        <label for="title">  Workout Title:</label>       <input type="text" required name="title" id="title" data-clear-btn="true"> <br>  
+                        <hr>   
+                        <label for="move-name">Add Move: </label> <input type="text" id="move-name" data-clear-btn="true"> 
+                        <label for="minute-slider" class="">Minutes</label>
+                        <input type="range" name="minute-slider" id="minute-slider" data-highlight="true" min="0" max="15" value="0" step="1">
+                        <label for="second-slider" class="">Seconds</label>
+                        <input type="range" name="second-slider" id="second-slider" data-highlight="true" min="0" max="59" value="0" step="1">
                 </form> 
-                
-                <fieldset class="ui-grid-a">
-                    <div class="ui-block-a" >  <a href="#" data-rel="back"><button id = "edit-cancel-btn" data-theme="d" data-icon="delete" > Cancel </button> </a> </div> 
-                    <div class="ui-block-b" > <a href="#" data-rel="back"><button id = "edit-save-btn" data-theme="b" data-icon="check"> Edit Workout</button> </a> </div> 
-                </fieldset>
-            </div> 
 
-        </div> 
+                <button  id="add-move" data-icon="plus"> Add Move</button> <br> 
+                <div class="error" id="error1" hidden>Please enter a move title and time</div>
+                <hr>
+
+                <div id="titletext"> </div> 
+                <ol id="move-list" data-role="listview"> </ol>
+                <br> 
+
+                <fieldset class="ui-grid-a">
+                    <div class="ui-block-a" > <a href="#main"> <button id = "add-workout-cancel-btn" data-theme="d" data-icon="delete"> Cancel </button> </a> </div> 
+                    <div class="ui-block-b" > <button id = "add-workout-save-btn" class="ui-btn-active" data-icon="check"> Save</button> </div> 
+                </fieldset>
+
+                <div class="error" id="error2" hidden>Please enter a workout title and add at least one move</div>
+            </div> 
+        </div> <!-- End Add workout page --> 
+
+        <!-- Edit Workout popup --> 
+        <div data-role="popup" id="edit-popup" data-theme="a" class="ui-corner-all ui-content">
+            <h3> <small> Edit Move <small> </h3> 
+            <form> 
+                <input type="text" data-clear-btn="true" name="edit-title" id="edit-title" value="5">
+                <label for="slider-2">Minutes</label> 
+                <input type="range"  class="slider" id="edit-minute-slider" data-highlight="true" min="0" max="60" value="5"> 
+                <label for="slider-2">Seconds</label>
+                <input type="range" class="slider" id="edit-second-slider" data-highlight="true" min="0" max="59" value="5"> 
+            </form> 
+            
+            <fieldset class="ui-grid-a">
+                <div class="ui-block-a" >  <a href="#" data-rel="back"><button id = "edit-cancel-btn" data-theme="d" data-icon="delete" > Cancel </button> </a> </div> 
+                <div class="ui-block-b" > <button id = "edit-save-btn" class="ui-btn-active" data-icon="check"> Edit Workout</button>  </div> 
+            </fieldset>
+            <div class = "error" id="popup-error" hidden> Please enter a valid title and time </div>    
+        </div> <!-- End Edit Workout Popup --> 
+
+
+
+
 
 
     </body>
     <script> 
-        var token = "testtoken"; 
+    //Add workout page scripts. 
+        $(document).ready(function(){
+            
+            var workout = {};
+            workout["moves"]= []; 
+
+            $("#title").change(function(){ 
+                $("#titletext").html("<h3>" + $("#title").val() + "</h3>")
+            })
+
+
+
+            $("#add-move").click(function(){
+
+                var move = $("#move-name").val();
+                var mins = $("#minute-slider").val(); 
+                var secs = $("#second-slider").val(); 
+                console.log(move)
+                if (move != "" && (mins > 0 || secs >0)) {          
+                    var time = (parseInt(mins)*60)+parseInt(secs)
+                    console.log(time); 
+
+
+                    var timetext = timeText(mins, secs);
+                    $("#move-list").append("<li>" + move + timetext); 
+
+                    workout["moves"].push([move, time]) // Add to workout
+
+                    console.log("appended " + title)
+                    console.log(workout)
+                    //Reset Values
+                    $("#move-name").val("");
+                    $("#minute-slider").val("0"); 
+                    $("#minute-slider").slider("refresh"); 
+                    $("#second-slider").val("0"); 
+                    $("#second-slider").slider("refresh"); 
+                    $('#move-list').listview('refresh');
+                    $("#error1").fadeOut()
+
+                }
+                else { 
+                    $("#error1").fadeIn()
+                }
+                
+            })
+          
+            $("#add-workout-save-btn").click(function() {
+                if ($("#move-list").html() != " " && $("#title").val() != "") {
+                    workout["title"] = $("#title").val()
+                    json.workouts.push(workout)
+                    populateHTML(); 
+                    window.location = '#main'
+                }   
+                else { $("#error2").fadeIn()}
+            })
+
+  
+        })
+    </script> 
+
+    <script>
+        var json = {}
+        function timeText(mins,secs){ 
+        //Format time to text nicely b/c grammar Nazis
+            var mintext = "minutes";
+            if (mins == 1) mintext = "minute";
+            var sectext = "seconds";
+            if (secs == 1) sectext = "second";
+            if (mins > 0){ 
+                    if (secs > 0) return  mins + " " + mintext + " and " + secs + " " + sectext +"."
+                    else return  mins + " " + mintext +"."
+                }
+                else return secs + " " + sectext + "."
+            return "Error"            
+        }
+
+        function populateHTML() { 
+        $("#workout-list").html(''); //Reset div. Yes, I am redrawing everytime, could be optimized. 
+        $.each(json.workouts, function(i, workout) {  //Add workouts
+                $("#workout-list").append('<div data-role="collapsible" > <h4>'+ workout.title + '</h4> <ul class="move-list" id="' + workout.title+'" data-role="listview">'); 
+                $.each(workout.moves, function(j, move){  //Add moves
+                    $("#"+workout.title).append('<li data-icon="gear"> <a href="#edit-popup" id="'+ i + ','+j+ '" class="editlink" data-rel="popup" data-position-to="window" data-role="button"  data-transition="pop">'+move[0]+' : ' + move[1]+'  <p class="ui-li-aside">Edit Workout</p> </a> </li> ')
+                })
+                 $("#workout-list").append('</ul> </div>');                    
+            })
+            //Refresh
+            $('#workout-list').collapsibleset().collapsibleset('refresh');
+            $('.move-list').listview().listview('refresh');               
+        }
+
+    //Main page scripts. 
+        var token = "testtoken2"; //Unique to Pebble account and this app!
         //Open user file 
         var jsonstring = false
-        var json; 
+
 
         $(document).ready(function(){ 
+            //Todo * Check if there is update available
+
+            //Initialize Popup
+            $( "#edit-popup" ).enhanceWithin().popup();
+            $('.slider').slider();
+
 
             $.ajax({
               url:'read.php?token='+ token,
               complete: function (response) {
                 if (response.responseText){
                     console.log("got a response! "); 
-                    jsonstring = response.responseText.replace(/\\"/g, '"');; //Unescape escaped ""
+                    jsonstring = response.responseText.replace(/\\"/g, '"'); //Unescape escaped ""
                     json = $.parseJSON(jsonstring); 
-
                     //Populate HTML
-                    $.each(json.workouts, function(i, workout) {  
-                        $("#workout-list").append('<div data-role="collapsible" > <h4>'+ workout.title + '</h4> <ul class="move-list" id="' + workout.title+'" data-role="listview">'); 
-                        $.each(workout.moves, function(j, move){ 
-                            $("#"+workout.title).append('<li> '+move[0]+' : ' + move[1]+'  <a href="#edit-popup" id="'+ i + ','+j+ '" class="editlink" data-rel="popup" data-position-to="window" data-transition="slidedown"> Settings </a> </li>  ')
-                        })
-                         $("#workout-list").append('</ul> </div>');                    
-                    })
-
-                    //Refresh
-                    $('#workout-list').collapsibleset().collapsibleset('refresh');
-                    $('.move-list').listview().listview('refresh');
+                    populateHTML();   
                 }
               },
               error: function () {
                   console.log("Something went wrong. Can't connect")
               },
-          });
+            });
 
 
             $(document).on('click', '.editlink', function(){
+                $( "#edit-popup" ).enhanceWithin().popup();
+
                 console.log("click"); 
                 var id = this.id.replace(/id/,'').split(','); 
                 console.log(id); 
@@ -104,20 +253,42 @@
 
                 $("#edit-second-slider").slider("refresh"); 
                 $("#edit-minute-slider").slider("refresh"); 
-                $("#second-slider").slider("refresh"); 
+
 
                 $("#edit-save-btn").val(id[0]+','+id[1])
             })
 
-            $("#save").click(function() { 
+            $("#save-btn").click(function() { 
                 //Submit json file to server
-                var data = new FormData();
-                var jsonsend = ' {"workouts":[{"title":"Title","moves":[["Move 1",60],["Move 2",15]]},{"title":"Title2","moves":[["Move 1 for 2",60],["Move 2 for 2",15]]}]} '; 
-                data.append("data" , jsonsend);
-                var xhr = (window.XMLHttpRequest) ? new XMLHttpRequest() : new activeXObject("Microsoft.XMLHTTP");
-                xhr.open( 'post', 'save.php?token='+token, true );
-                xhr.send(data);
-                console.log("Data sent to php"); 
+                //var data = new FormData();
+                if (Boolean(json)) { 
+
+
+                $.ajax({
+                  type: "POST",
+                  url: 'save.php?token='+token,
+                  data: {"data": JSON.stringify(json)},
+                  success: function(){console.log("YTASDFADSF")}
+                });
+                // var ajax = new XMLHttpRequest(); 
+                // ajax.onreadystatechange=function() { 
+                //     console.log(ajax.responseText );
+                // }
+                // ajax.open("POST",'save.php?token='+token,true);
+                // //ajax.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+                // ajax.send(data);
+                //data.append("data" , JSON.stringify(json).replace(/\\"/g, '"'));
+                // var xhr = (window.XMLHttpRequest) ? new XMLHttpRequest() : new activeXObject("Microsoft.XMLHTTP");
+                // xhr.open( 'post', 'save.php?token='+token, true );
+                // xhr.send(data);
+                // console.log("Data sent to php"); 
+                // console.log(JSON.stringify(json))
+
+                console.log("ajax funciton called")
+                console.log(json); 
+                document.location = "pebblejs://close#" +encodeURIComponent(JSON.stringify(json)) ; 
+                }
+                
             })
 
             $("#edit-save-btn").click(function(){ 
@@ -130,13 +301,19 @@
                 if (title != "" && (mins > 0 || secs >0)) {          
                     var time = (parseInt(mins)*60)+parseInt(secs)       
                     json.workouts[id[0]].moves[id[1]] = [title , time]; 
-                    console.log("Edited"); 
-
-                    
+                    console.log("Edited");   
+                    populateHTML(); 
+                    console.log(id)
+                    $("#popup-error").fadeOut(); 
+                    $("#edit-popup").popup('close');    
                 }
-                console.log(id)
+                else $("#popup-error").fadeIn(); 
+
 
             })
+            $("#cancel-btn").click(function() { 
+                document.location = "pebblejs://close#" 
+            }) 
 
         })
 
