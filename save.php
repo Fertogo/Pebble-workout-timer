@@ -1,9 +1,9 @@
 <?php
-    echo 'PHP Oprnrf';
+    echo("Starting PHP");
     $token = $_GET["token"]; 
-    $filename = $token.".json";
+    $filename = "userworkouts/".$token.".json";
     $file = fopen("$filename", "w"); 
-    fwrite($file, $_POST['data']); 
+    fwrite($file, $_POST["data"]); 
     fclose($file); 
-    echo 'File Updated';
+    echo("PHP done")
 ?>
