@@ -1,15 +1,12 @@
-//Custom Workout Timer for Pebble. v 0.9
+//Custom Workout Timer for Pebble. v 2.0
 //By Fernando Trujano
 //    trujano@mit.edu
 // 6/30/2014
-
-//App "technically" works but has many bugs and needs optimizations
-/* Todo: 
-
-*/
+char * ver = "ver:1.0"; 
 
 #include "pebble.h"
 #include<stdlib.h>
+#include<string.h> 
   
 static Window *window;
 static TextLayer *text_layer;
@@ -43,35 +40,39 @@ void sendMessage(char* message) {
   APP_LOG(APP_LOG_LEVEL_DEBUG,"Message \"%s\" sent to phone", message);
 }
 
+//Not updated for v2.0.
+//Todo - disable or send a request to delete item from server. 
 static void deleteFromStorage(int key){ 
     if (persist_exists(key)){
-        char s1[12] = "delete,";
-        char * s2 = readFromStorage(key);
-        strcat(s1,s2);
-        sendMessage(s1);  
+      char s1[12] = "delete,";
+      char * s2 = readFromStorage(key);
+      strcat(s1,s2);
+      sendMessage(s1);  
       
-        persist_delete(key); //Delete workout 
+      persist_delete(key); //Delete workout 
         
-        for (int i = key; i < NUM_FIRST_MENU_ITEMS; i++){ 
-          persist_write_string(i, readFromStorage(i+1)); //Re-arrange memory   
-          APP_LOG(APP_LOG_LEVEL_DEBUG,"Setting workout: '%s' from key %i to %i", readFromStorage(i+1), i+1, i);    
-        }
-        //Convert int to string    
-        char buffer[10];
-        snprintf(buffer, 10, "%d", atoi(readFromStorage(0))-1);  
-        persist_write_string(0, buffer); //Decrease workouts by one  
-        APP_LOG(APP_LOG_LEVEL_DEBUG,"Key %i deleted from storage", key);        
+      for (int i = key; i < NUM_FIRST_MENU_ITEMS; i++){ 
+        persist_write_string(i, readFromStorage(i+1)); //Re-arrange memory   
+        APP_LOG(APP_LOG_LEVEL_DEBUG,"Setting workout: '%s' from key %i to %i", readFromStorage(i+1), i+1, i);    
+      }
+      //Convert int to string    
+      char buffer[10];
+      snprintf(buffer, 10, "%d", atoi(readFromStorage(0))-1);  
+      persist_write_string(0, buffer); //Decrease workouts by one  
+      APP_LOG(APP_LOG_LEVEL_DEBUG,"Key %i deleted from storage", key);    
+      
     }
   
-  else APP_LOG(APP_LOG_LEVEL_DEBUG,"Delete from storage: Key %i not found", key);
+    else APP_LOG(APP_LOG_LEVEL_DEBUG,"Delete from storage: Key %i not found", key);
 }
 
-//Do not use, broken atm
 void clearMemory() { 
     for (int i =0; i<NUM_FIRST_MENU_ITEMS; i++ ) { 
       persist_delete(i); //Delete workout
     }
     APP_LOG(APP_LOG_LEVEL_DEBUG,"Memory Cleared Successfully");
+    NUM_FIRST_MENU_ITEMS = 0; 
+    persist_write_string(0,"0");
 }
 
 void updateMenu(){ 
@@ -86,6 +87,7 @@ void updateMenu(){
   menu_layer_reload_data(menu_layer); //Reload the menu 
   vibes_short_pulse(); 
 }
+
 
 
 static Window *window;
@@ -117,7 +119,7 @@ static void menu_draw_header_callback(GContext* ctx, const Layer *cell_layer, ui
 }
 
 static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Drawing Menu...");
+ // APP_LOG(APP_LOG_LEVEL_DEBUG, "Drawing Menu...");
   switch (cell_index->section) {
     case 0:  
     //Replacing switches with for loop to dynamically add items
@@ -134,33 +136,33 @@ static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuI
 // Here we capture when a user selects a menu item
 void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data) {
   // Use the row to specify which item will receive the select action
-    switch (cell_index->section) {
+  switch (cell_index->section) {
     case 0:
-  for (int i=0; i<NUM_FIRST_MENU_ITEMS; i++){ 
-      if (cell_index->row == i ){ 
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "Button Clicked: %i", i);
-        char *workout = readFromStorage(i+1);//Get Workout Title
-        sendMessage(workout); 
-        //clearMemory(); 
-      }
-    }  
+      for (int i=0; i<NUM_FIRST_MENU_ITEMS; i++){ 
+          if (cell_index->row == i ){ 
+            APP_LOG(APP_LOG_LEVEL_DEBUG, "Button Clicked: %i", i);
+            char *workout = readFromStorage(i+1);//Get Workout Title
+            sendMessage(workout); 
+            //clearMemory(); 
+          }
+      }  
       break; 
-    } 
+  } 
 }
 
 //When user long clicks on a menu Item - aka deletes item
 void menu_long_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data) {
   // Use the row to specify which item will receive the select action
-    switch (cell_index->section) {
+  switch (cell_index->section) {
     case 0:
-  for (int i=0; i<NUM_FIRST_MENU_ITEMS; i++){ 
-      if (cell_index->row == i ){  
-        deleteFromStorage(i+1); 
-        updateMenu(); 
-      }
-    }  
+      for (int i=0; i<NUM_FIRST_MENU_ITEMS; i++){ 
+          if (cell_index->row == i ){  
+            //deleteFromStorage(i+1); //Disabled until deleteFromStorage is updated to delete from server too. 
+            //updateMenu(); 
+          }
+      }  
       break; 
-    } 
+  } 
 }
 
 void window_load(Window *window) {
@@ -194,9 +196,9 @@ static TextLayer *paused_text;
 char * time_str = "";
 
 static void time_window_disappear(Window *window){ 
-    // Cancel the timer
-    APP_LOG(APP_LOG_LEVEL_DEBUG,"Timer Window Disappeared"); 
-    app_timer_cancel(timer); 
+  // Cancel the timer
+  APP_LOG(APP_LOG_LEVEL_DEBUG,"Timer Window Disappeared"); 
+  app_timer_cancel(timer); 
 
 }
 //Called every one second
@@ -275,7 +277,7 @@ void createTimer(char* name, char* time) {  //Creates Timer window
 }
 
 void window_unload(Window *window) {
-  app_timer_cancel(timer);
+  if (timer != NULL) app_timer_cancel(timer);
   // Destroy the menu layer
   menu_layer_destroy(menu_layer); 
 } 
@@ -284,6 +286,43 @@ enum {
       AKEY_NUMBER,
       AKEY_TEXT,
    };
+
+void addWorkout(char* title){ 
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "adding workout!");
+        int totalworkouts = atoi(readFromStorage(0));
+        NUM_FIRST_MENU_ITEMS = totalworkouts; //Update NUM_FIRST_MENU_ITEMS
+        //Add message to storage and increase workout counter 
+        persist_write_string(NUM_FIRST_MENU_ITEMS+1, title); // Add to Totalworkouts +1 
+        APP_LOG(APP_LOG_LEVEL_DEBUG,"Message Added to Storage!");
+        APP_LOG(APP_LOG_LEVEL_DEBUG,"I just added workout %s to index %i", title, NUM_FIRST_MENU_ITEMS+1);  
+
+        //Convert int to string
+        char buffer[10];
+        snprintf(buffer, 10, "%d", NUM_FIRST_MENU_ITEMS+1);  
+        persist_write_string(0, buffer); //Increment workouts
+
+        APP_LOG(APP_LOG_LEVEL_DEBUG,"Total Workouts %s", buffer); 
+        if (atoi(buffer) < 1) {
+          window = window_create(); 
+          window_set_window_handlers(window, (WindowHandlers) {
+            .load = window_load,
+            .unload = window_unload,
+          });
+          window_stack_push(window, true /* Animated */);
+          updateMenu(); 
+        }
+}
+
+//Minified Strtok (ignore) Thanks to Steve Caldwell for trick. 
+char*strtok(s,delim)
+register char*s;register const char*delim;{register char*spanp;register int c,sc;char*tok;static char*last;if(s==NULL&&(s=last)==NULL)
+return(NULL);cont:c=*s++;for(spanp=(char*)delim;(sc=*spanp++)!=0;){if(c==sc)
+goto cont;}
+if(c==0){last=NULL;return(NULL);}
+tok=s-1;for(;;){c=*s++;spanp=(char*)delim;do{if((sc=*spanp++)==c){if(c==0)
+s=NULL;else
+s[-1]=0;last=s;return(tok);}}while(sc!=0);}}
+
 
 //Recieve message from js
 static void in_received_handler(DictionaryIterator *iter, void *context) {
@@ -306,32 +345,26 @@ static void in_received_handler(DictionaryIterator *iter, void *context) {
       message = text_tuple->value->cstring;
       APP_LOG(APP_LOG_LEVEL_DEBUG, "Text: %s", message );
      }
+   
+    if (strcmp(type,"workouts") == 0) { 
+        clearMemory(); 
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "adding workouts!");
+        char * workouttitle;
   
-    if (strcmp(type,"workout") == 0) { 
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "adding workout!");
-        //Add message to storage and increase workout counter 
-        persist_write_string(NUM_FIRST_MENU_ITEMS+1, message); // Add to Totalworkouts +1 
-        APP_LOG(APP_LOG_LEVEL_DEBUG,"Message Added to Storage!");
-      
-        int totalworkouts = atoi(readFromStorage(0));
-        NUM_FIRST_MENU_ITEMS = totalworkouts; //Update NUM_FIRST_MENU_ITEMS
-        //Convert int to string
-        char buffer[10];
-        snprintf(buffer, 10, "%d", NUM_FIRST_MENU_ITEMS+1);  
-        persist_write_string(0, buffer); //Increment workouts
-        APP_LOG(APP_LOG_LEVEL_DEBUG,"Total Workouts %s", buffer); 
-        if (atoi(buffer) > 1) updateMenu();
-        else { 
-          window = window_create(); 
-          window_set_window_handlers(window, (WindowHandlers) {
-            .load = window_load,
-            .unload = window_unload,
-          });
-          window_stack_push(window, true /* Animated */);
-          updateMenu(); 
-        }
+        workouttitle = strtok (message,",");
+        while (workouttitle != NULL)
+        {
+          APP_LOG(APP_LOG_LEVEL_DEBUG, workouttitle);
+          addWorkout(workouttitle); 
+          workouttitle = strtok (NULL, ",");
+        }     
+        updateMenu(); 
     }
   
+   else if (strcmp(type,"reset") == 0) { 
+     clearMemory(); 
+   }
+    
     else if (strcmp(type,"end") == 0) { 
         APP_LOG(APP_LOG_LEVEL_DEBUG, "Workout Finished");
         //Show end Card
@@ -366,6 +399,7 @@ static void in_received_handler(DictionaryIterator *iter, void *context) {
 
 int main(void) {
   APP_LOG(APP_LOG_LEVEL_DEBUG,"C Code Started");
+
   if (!persist_exists(0)) { 
         APP_LOG(APP_LOG_LEVEL_DEBUG,"First time using app");
         persist_write_string(0, "0"); //Increment workouts
@@ -383,6 +417,7 @@ int main(void) {
    
   app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
   app_message_register_inbox_received((AppMessageInboxReceived) in_received_handler);
+  
  
   if (totalworkouts == 0) { 
         //Show Instructions

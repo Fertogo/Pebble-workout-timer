@@ -2,7 +2,7 @@
 //By Fernando Trujano
 //    trujano@mit.edu
 // 6/30/2014
-
+var version = "2.0";
 //Sends workouts to watch app using Pebble.sendAppMesssage
 
 var counter = 0; 
@@ -33,7 +33,8 @@ Pebble.addEventListener("ready", function(e){
 
 Pebble.addEventListener("showConfiguration", function(){ 
   console.log("Showing Configuration");
-  Pebble.openURL("http://www.fernandotrujano.com/pebble");
+  console.log(version); 
+  Pebble.openURL("http://fernandotrujano.x10host.com/pebble/index.html?infon="+Pebble.getAccountToken()+','+version); //Reached CPU limit on old host
 });
 
 //After Closing settings view
@@ -41,24 +42,34 @@ Pebble.addEventListener("showConfiguration", function(){
 Pebble.addEventListener("webviewclosed",
   function(e) {
     if (e.response != "CANCELLED") {
-      console.log("Configuration window returned: " + e.response); //Site should return {"title": "ABX", "moves": [["Crunchy Frog", "10"], ["move", "time"] ... ]}
-      var title = JSON.parse(decodeURIComponent(e.response)).title; 
-      var moves = [];
-      moves = JSON.parse(decodeURIComponent(e.response)).moves;  // For some reson moves is saving as a string instead of 2D array. 
-     
-      window.localStorage.setItem(title, moves); 
-      console.log("Local Storage Set");
-      console.log(title); 
-      console.log(moves[0][0]); 
+      console.log("Configuration window returned: " + e.response); //Site should return {"workouts":[{"moves":[["move1",180]],"title":"AbRipperX"},{"moves":[["sdfsdfasdasdfaaaaaaa",68]],"title":"sdfsdf"},{"moves":[["sdf",60]],"title":"sdff"},{"moves":[["asdfasdf",64]],"title":"asdfdsfa"}]}
 
-      sendMessage("workout", title); 
+      var json; 
+      json = JSON.parse(decodeURIComponent(e.response));  
+     // json = JSON.parse('{"workouts":[{"moves":[["move1",180]],"title":"1"},{"moves":[["sdfsdfasdasdfaaaaaaa",68]],"title":"2"},{"moves":[["sdf",60]],"title":"3"},{"moves":[["asdfasdf",64]],"title":"4"}]}');
+      var title; 
+      var moves; 
+      var workouts = []; 
+      console.log(json); 
+      
+      //Add Each workout
+      for (var workout in json.workouts) {    
+        title = json.workouts[workout].title; 
+        moves = json.workouts[workout].moves; 
+        workouts.push(title); //Add to workouts array to be sent to Pebble 
+        window.localStorage.setItem(title, moves);     //Save workout on local storage
+      }
+      
+      console.log("Local Storage Set");
+      sendMessage("workouts", workouts.join()); //Send workout list to Pebble
+      console.log(workouts); 
+
     }
   }
 );
 
-//Recieve message from Pebble
 var moves = "";
-
+//Recieve message from Pebble
 Pebble.addEventListener("appmessage",
   function(e) {
     console.log("Received message: " + e.payload[1]); 
@@ -68,7 +79,7 @@ Pebble.addEventListener("appmessage",
       window.localStorage.removeItem(e.payload[1].split(',')[1]); 
       console.log("Deleted item from storage:"+ e.payload[1].split(',')[1]);
     }
-  
+      
     else if (e.payload[1] != "done"){ //Begin Workout     
         moves = window.localStorage.getItem(e.payload[1]);
         counter = 0; //Reset counter
