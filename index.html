@@ -19,6 +19,10 @@
             a:link {
                 text-decoration: none;
              }
+
+             .totaltime { 
+                font-weight: 100;
+             }
          </style> 
     </head>
 
@@ -28,6 +32,7 @@
             <div data-role="content"> 
                 <div class="error" id="update" hidden><strong> There is an update for this app available on the Pebble appstore. </strong> </div>
                 <h2>Manage Workouts <a href="#info" data-transition="flip"><button data-inline="true" data-mini="true" data-icon="info"> FAQ </button></a></h2> 
+
                 <div data-role="collapsibleset" data-content-theme="a" data-iconpos="left" data-collapsed-icon="carat-d" data-expanded-icon="carat-u" id="workout-list"> 
                 </div> 
                 <a href="#add"><button data-inline="true" data-mini="true" data-icon="plus"> Add Workout </button></a> 
@@ -79,7 +84,12 @@
                 <div class="error" id="error1" hidden>Please enter a move title and time</div>
                 <hr>
 
-                <div id="titletext"> </div> 
+                <fieldset class="ui-grid-a">
+                    <div class="ui-block-a" > <div id="titletext"> </div>  </div> 
+                    <div class="ui-block-b" ><h3> <small class="totaltime" id="add-total-time"> </small> </h3>  </div> 
+                </fieldset>
+
+                
                 <ol id="move-list" data-role="listview"> </ol>
                 <br> 
 
@@ -118,15 +128,14 @@
         $(document).ready(function(){
             var workout = {};
             workout["moves"]= []; 
+            var totalsecs = 0; 
 
 
             $("#title").change(function(){ 
-                $("#titletext").html("<h3>" + $("#title").val() + "</h3>")
+                $("#titletext").html("<h3>" + $("#title").val()+ "</h3>")
             })
 
-            $("#add-move").click(function(){
-                
-                
+            $("#add-move").click(function(){       
                 var move = $("#move-name").val();
                 var mins = $("#minute-slider").val(); 
                 var secs = $("#second-slider").val(); 
@@ -134,14 +143,17 @@
                 if (move != "" && (mins > 0 || secs >0)) {          
                     var time = (parseInt(mins)*60)+parseInt(secs)
                     console.log(time); 
-
-                    var timetext = timeText(mins, secs);
+   
+                    totalsecs += time; 
+                    var timetext = timeText(time);
                     $("#move-list").append("<li>" + move +' for ' + timetext); 
 
                     workout["moves"].push([move, time]) // Add to workout
 
                     console.log("appended " + title)
                     console.log(workout)
+
+                    $('#add-total-time').html("Total Time: "+timeText(totalsecs));
                     //Reset Values
                     $("#move-name").val("");
                     $("#minute-slider").val("0"); 
@@ -149,7 +161,6 @@
                     $("#second-slider").val("0"); 
                     $("#second-slider").slider("refresh"); 
                     $('#move-list').listview('refresh');
-
                     $("#error1").fadeOut()
                 }
 
@@ -160,6 +171,7 @@
           
             $("#add-workout-save-btn").click(function() {
                 if ($("#move-list").html() != " " && $("#title").val() != "") {
+                    totalsecs = 0;  
                     workout["title"] = $("#title").val()
                     console.log(workout); 
                     json.workouts.push(workout)
@@ -187,7 +199,9 @@
 
     <script>
         var json = {}
-        function timeText(mins,secs){ 
+        function timeText(time){ 
+            secs = time%60; 
+            mins = (time-secs)/60; 
         //Format time to text nicely b/c grammar Nazis
             var mintext = "minutes";
             if (mins == 1) mintext = "minute";
@@ -202,12 +216,18 @@
         }
 
         function populateHTML() { 
+        
         $("#workout-list").html(''); //Reset div. Yes, I am redrawing everytime, could be optimized. 
         $.each(json.workouts, function(i, workout) {  //Add workouts
-                $("#workout-list").append('<div data-role="collapsible" > <h4>'+ workout.title + '</h4> <ul class="move-list" id="' + workout.title+'" data-role="listview">'); 
+                var maintotaltime = 0; 
+                $.each(workout.moves, function(j, move){ maintotaltime += parseInt(move[1]) }) //Please optimize
+                $("#workout-list").append('<div data-role="collapsible" > <h4>'+ workout.title + ' <span class="totaltime" style="float:right"> Total time: '+ timeText(maintotaltime)+' </span></h4> <ul class="move-list" id="' + workout.title+'" data-role="listview">'); 
                 $.each(workout.moves, function(j, move){  //Add moves
-                    $("#"+workout.title).append('<li data-icon="gear"> <a href="#edit-popup" id="'+ i + ','+j+ '" class="editlink" data-rel="popup" data-position-to="window" data-role="button"  data-transition="pop">'+move[0]+' : ' + move[1]+'  <p class="ui-li-aside">Edit Workout</p> </a> </li> ')
+                    $("#"+workout.title).append('<li data-icon="gear"> <a href="#edit-popup" id="'+ i + ','+j+ '" class="editlink" data-rel="popup" data-position-to="window" data-role="button"  data-transition="pop">'+move[0]+' <small class="totaltile"> for ' + timeText(parseInt(move[1]))+'</small>   <p class="ui-li-aside">Edit Workout</p> </a> </li> ')
+
+                    console.log(maintotaltime); 
                 })
+
                  $("#workout-list").append('</ul> </div>');                    
             })
             //Refresh
@@ -307,9 +327,13 @@
                     $("#edit-popup").popup('close');    
                 }
                 else $("#popup-error").fadeIn(); 
-
-
             })
+
+            $("#edit-cancel-btn").click(function(){ 
+                $("#popup-error").fadeOut(); 
+                $("#edit-popup").popup('close');   
+            })
+
             $("#cancel-btn").click(function() { 
                 document.location = "pebblejs://close#" 
             }) 
