@@ -48,7 +48,6 @@
                 margin:0;
              }
 
-
          </style> 
     </head>
 
@@ -131,7 +130,7 @@
                     <div class="ui-block-b" > <button id = "add-workout-save-btn" class="ui-btn-active" data-icon="check"> Save</button> </div> 
                 </fieldset>
 
-                <div class="error" id="error2" hidden>Please enter a workout title and add at least one move</div>
+                <div class="error" id="error-add-workout" hidden>Please enter a workout title and add at least one move</div>
             </div> 
         </div> <!-- End Add workout page --> 
 
@@ -161,8 +160,28 @@
     //Add workout page scripts. 
 
         $(document).ready(function(){
+            function resetAddWorkoutForm(){ 
+                console.log("Resetting Add Workout Form...")
+                //Reset Form
+                workout = {};
+                workout.moves = [];
+                workout.title = ""; 
+                $('#add-total-time').html('');
+                $("#titletext").html("");
+                $("#title").val("");
+                $("#move-name").val("");
+                $("#minute-slider").val("0"); 
+                $("#minute-slider").slider("refresh"); 
+                $("#second-slider").val("0"); 
+                $("#second-slider").slider("refresh"); 
+                $('#move-list').html('');
+                $('#move-list').listview('refresh');
+                $("#error1").fadeOut();
+                $("#error-add-workout").fadeOut(); 
+
+             }
             var workout = {};
-            workout["moves"]= []; 
+            workout.moves= []; 
             var totalsecs = 0; 
 
 
@@ -182,8 +201,8 @@
                     totalsecs += time; 
                     var timetext = timeText(time);
                     $("#move-list").append("<li>" + move +' for ' + timetext); 
-
-                    workout["moves"].push([move, time]) // Add to workout
+                    console.log(workout); 
+                    workout.moves.push([move, time]) // Add to workout
 
                     console.log("appended " + title)
                     console.log(workout)
@@ -205,29 +224,50 @@
             })
           
             $("#add-workout-save-btn").click(function() {
-                if ($("#move-list").html() != " " && $("#title").val() != "") {
+
+                var title = $("#title").val();
+                while (title.slice(-1)==" ") title = title.slice(0,-1) //Don't allow trailing spaces
+
+                var same_title = false; 
+                $.each(json.workouts, function(index, workout){ 
+                    if (title == workout.title) same_title=true
+                })
+
+                //Form Validation
+                if (title == "") { //No title entered
+                    $("#error-add-workout").fadeIn()
+                    $("#error-add-workout").html("Please enter a title")
+                } 
+                
+                else if (same_title){ //Title already exists
+                    $("#error-add-workout").html("Workout title already exists. Please change.")
+                    $("#error-add-workout").fadeIn()
+                    } 
+
+                else if (title.indexOf(',') > 0){ //Valid title name (no commas)
+                    $("#error-add-workout").html("Plase don't use commas in your title");
+                    $("#error-add-workout").fadeIn(); 
+                }
+
+                else if ($("#move-list").html() == " "){  //No moves entered
+                    $("#error-add-workout").html('Please enter at least one move');
+                    $("#error-add-workout").fadeIn();
+                } 
+
+                else {  //Looks good
                     totalsecs = 0;  
-                    workout["title"] = $("#title").val()
+                    workout.title = title
                     console.log(workout); 
                     json.workouts.push(workout)
                     populateHTML(); 
                     window.location = '#main'
-                    //Reset Form
-                    workout = {}
-                    workout["moves"] = []
-                    $('#add-total-time').html('');
-                    $("#titletext").html("");
-                    $("#title").val("");
-                    $("#move-name").val("");
-                    $("#minute-slider").val("0"); 
-                    $("#minute-slider").slider("refresh"); 
-                    $("#second-slider").val("0"); 
-                    $("#second-slider").slider("refresh"); 
-                    $('#move-list').html('');
-                    $('#move-list').listview('refresh');
-                    $("#error1").fadeOut()
+                    resetAddWorkoutForm(); 
                 }   
-                else { $("#error2").fadeIn()}
+
+            })
+
+            $("#add-workout-cancel-btn").click(function(){ 
+                resetAddWorkoutForm(); 
             })
         })
 
@@ -264,7 +304,8 @@
                     })
                         $("#"+workout.title).append('<li><fieldset class="ui-grid-a"><div class="ui-block-a"><a href="#edit-popup" id="'+ i+ '" class="add-move-to-existing" data-rel="popup" data-position-to="window" data-role="button"  data-transition="pop"><button class="li-btn" data-mini="true" data-icon="plus" >Add Move</button></a> </div><div class="ui-block-b"><a href="#" id="'+ i+ '" class="delete-workout"><button data-mini="true" class="delete li-btn" data-icon="delete">Delete Workout</button></a> </div></fieldset></li>  ');
                         
-                     $("#workout-list").append('</ul> </div>')//.trigger('create');                    
+                     $("#workout-list").append('</ul> </div>')//.trigger('create');  
+
                 })
                 //Refresh
                 $('#workout-list').collapsibleset().collapsibleset('refresh')//.trigger('create'); ;
@@ -430,7 +471,7 @@
                 "http://api.bitly.com/v3/shorten?callback=?", 
                 { 
                     "format": "json",
-                    "apiKey": "MY_API_KEY",  //Hidden from public repo
+                    "apiKey": "R_ceb591091d2c79f818d71577d992ae28",  //Anyone can see this from "Network" so no need to hide it :(. 
                     "login": "fertogo",
                     "longUrl": $(location).attr('href')
                 },
