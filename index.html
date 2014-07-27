@@ -23,6 +23,22 @@
              .totaltime { 
                 font-weight: 100;
              }
+
+             .delete{ 
+                background-color: #FFA6A6!important;
+             }
+
+             .add-move-to-existing,.delete-workout{ 
+                padding:0;
+                border:0;
+                margin:0;
+             }
+
+             .li-btn { 
+                margin:0;
+             }
+
+
          </style> 
     </head>
 
@@ -47,7 +63,7 @@
 
         <!-- FAQ Page --> 
         <style> 
-            .ui-li-desc{ 
+            .ui-listview>li p{ 
                 overflow: visible;
                 white-space: normal;
             }
@@ -55,11 +71,16 @@
         <div data-role="page" id="info">
             <h3> <a href="#main" data-transition="flip"><button data-inline="true" data-mini="true" data-icon="back"> Back</button></a> Frequently Asked Questions </h1> 
             <ul data-role="listview"> 
-                <li> <div class="ui-li-heading"> How do I add a workout? </div>  <p class ="ui-li-desc"> On the Pebble app, find this app and click on the settings icon. Type in a workout title and add moves by using the sliders and textbox. You can add as many moves as you want.  When you are done, click on Add workout. The workout should appear on your Pebble. </p>  </li> 
-                <li> <div class="ui-li-heading"> How do I delete a workout? </div>  <p class ="ui-li-desc"> On the Pebble app, with the workout selected, press and hold the middle button. The pebble should vibrate and the workout should dissapear. </p>  </li> 
-                <li> <div class="ui-li-heading"> How do I pause/resume a timer? </div>  <p class ="ui-li-desc"> While a timer is running, simply press the middle button to pause or resume. </p>  </li> 
-                 <li> <div class="ui-li-heading">Can I suggest a new feature? </div>  <p class ="ui-li-desc"> Yes, please. That would be awesome. If you have any ideas to improve this app, or ideas for another app please email me at <a href="mailto:trujano.fernando@gmail.com?subject=App Suggestion"> trujano.fernando@gmail.com </a>  </p>  </li>                
-                <li> <div class="ui-li-heading"> Something went wrong!</div>  <p class ="ui-li-desc"> That is not a question. If you think you found a bug, please <a href="mailto:trujano.fernando@gmail.com?subject=Custom Workout Timer bug!"> email </a> me the details. Uninstalling and reinsalling the app might solve your problem for now.  </p>  </li> 
+                <li> How do I add a workout? 
+                    <p> On the Pebble app, find this app and click on the settings icon. Type in a workout title and add moves by using the sliders and textbox. You can add as many moves as you want.  When you are done, click on Add workout. The workout should appear on your Pebble. </p>  </li> 
+                <li> How do I delete a workout? 
+                    <p> On the Pebble app, with the workout selected, press and hold the middle button. The pebble should vibrate and the workout should dissapear. </p>  </li> 
+                <li>  How do I pause/resume a timer?
+                    <p> While a timer is running, simply press the middle button to pause or resume. </p>  </li> 
+                 <li> Can I suggest a new feature?
+                    <p> Yes, please. That would be awesome. If you have any ideas to improve this app, or ideas for another app please email me at <a href="mailto:trujano.fernando@gmail.com?subject=App Suggestion"> trujano.fernando@gmail.com </a>  </p>  </li>                
+                <li> Something went wrong!
+                    <p> That is not a question. If you think you found a bug, please <a href="mailto:trujano.fernando@gmail.com?subject=Custom Workout Timer bug!"> email </a> me the details. Uninstalling and reinsalling the app might solve your problem for now.  </p>  </li> 
             </ul> 
         </div> 
 
@@ -104,8 +125,10 @@
 
         <!-- Edit Workout popup --> 
         <div data-role="popup" id="edit-popup" data-theme="a" class="ui-corner-all ui-content">
-            <h3> <small> Edit Move <small> </h3> 
+            <h3> <span id="popup-text"> </span> <button id = "edit-delete-btn" data-icon="delete" data-inline="true" data-mini="true" class="delete"> Delete Move</button> </h3> 
             <form> 
+
+                <label>Name</label> 
                 <input type="text" data-clear-btn="true" name="edit-title" id="edit-title" value="5">
                 <label for="slider-2">Minutes</label> 
                 <input type="range"  class="slider" id="edit-minute-slider" data-highlight="true" min="0" max="60" value="5"> 
@@ -115,7 +138,7 @@
             
             <fieldset class="ui-grid-a">
                 <div class="ui-block-a" >  <button id = "edit-cancel-btn" data-theme="d" data-icon="delete" > Cancel </button> </div> 
-                <div class="ui-block-b" > <button id = "edit-save-btn" class="ui-btn-active" data-icon="check"> Edit Workout</button>  </div> 
+                <div class="ui-block-b" > <button id = "edit-save-btn" class="ui-btn-active" data-icon="check"> Done</button>  </div> 
             </fieldset>
             <div class = "error" id="popup-error" hidden> Please enter a valid title and time </div>    
         </div> <!-- End Edit Workout Popup --> 
@@ -180,6 +203,7 @@
                     //Reset Form
                     workout = {}
                     workout["moves"] = []
+                    $('#add-total-time').html('');
                     $("#titletext").html("");
                     $("#title").val("");
                     $("#move-name").val("");
@@ -217,23 +241,27 @@
 
         function populateHTML() { 
         
-        $("#workout-list").html(''); //Reset div. Yes, I am redrawing everytime, could be optimized. 
-        $.each(json.workouts, function(i, workout) {  //Add workouts
-                var maintotaltime = 0; 
-                $.each(workout.moves, function(j, move){ maintotaltime += parseInt(move[1]) }) //Please optimize
-                $("#workout-list").append('<div data-role="collapsible" > <h4>'+ workout.title + ' <span class="totaltime" style="float:right"> Total time: '+ timeText(maintotaltime)+' </span></h4> <ul class="move-list" id="' + workout.title+'" data-role="listview">'); 
-                $.each(workout.moves, function(j, move){  //Add moves
-                    $("#"+workout.title).append('<li data-icon="gear"> <a href="#edit-popup" id="'+ i + ','+j+ '" class="editlink" data-rel="popup" data-position-to="window" data-role="button"  data-transition="pop">'+move[0]+' <small class="totaltile"> for ' + timeText(parseInt(move[1]))+'</small>   <p class="ui-li-aside">Edit Workout</p> </a> </li> ')
-
-                    console.log(maintotaltime); 
+            $("#workout-list").html(''); //Reset div. Yes, I am redrawing everytime, could be optimized. 
+            $.each(json.workouts, function(i, workout) {  //Add workouts
+                    var maintotaltime = 0; 
+                    $.each(workout.moves, function(j, move){ maintotaltime += parseInt(move[1]) }) //Please optimize
+                    $("#workout-list").append('<div data-role="collapsible" id="workoutcollapsible" > <h4>'+ workout.title + ' <span class="totaltime" style="float:right" id="total-time">'+ timeText(maintotaltime)+' </span>  </h4> <ul class="move-list" id="' + workout.title+'" data-role="listview">'); 
+                    $.each(workout.moves, function(j, move){  //Add moves
+                        $("#"+workout.title).append('<li data-icon="gear"> <a href="#edit-popup" id="'+ i + ','+j+ '" class="editlink" data-rel="popup" data-position-to="window" data-role="button"  data-transition="pop">'+move[0]+' <small class="totaltile"> for ' + timeText(parseInt(move[1]))+'</small>   <p class="ui-li-aside">Edit Move</p> </a> </li> ');
+                        console.log(maintotaltime); 
+                    })
+                        $("#"+workout.title).append('<li><fieldset class="ui-grid-a"><div class="ui-block-a"><a href="#edit-popup" id="'+ i+ '" class="add-move-to-existing" data-rel="popup" data-position-to="window" data-role="button"  data-transition="pop"><button class="li-btn" data-mini="true" data-icon="plus" >Add Move</button></a> </div><div class="ui-block-b"><a href="#" id="'+ i+ '" class="delete-workout"><button data-mini="true" class="delete li-btn" data-icon="delete">Delete Workout</button></a> </div></fieldset></li>  ');
+                        
+                     $("#workout-list").append('</ul> </div>')//.trigger('create');                    
                 })
+                //Refresh
+                $('#workout-list').collapsibleset().collapsibleset('refresh')//.trigger('create'); ;
 
-                 $("#workout-list").append('</ul> </div>');                    
-            })
-            //Refresh
-            $('#workout-list').collapsibleset().collapsibleset('refresh');
-            $('.move-list').listview().listview('refresh');               
+                $('.move-list').listview().listview('refresh').trigger('create'); ; 
+
         }
+
+
 
     //Main page scripts. 
         var parser = document.createElement('a');
@@ -244,6 +272,12 @@
         var jsonstring = false
 
         $(document).ready(function(){ 
+            // Array Remove - By John Resig (MIT Licensed)
+            Array.prototype.remove = function(from, to) {
+              var rest = this.slice((to || from) + 1 || this.length);
+              this.length = from < 0 ? this.length + from : from;
+              return this.push.apply(this, rest);
+            };
             //Todo * Check if there is update available
 
             //Initialize Popup
@@ -269,7 +303,10 @@
 
 
             $(document).on('click', '.editlink', function(){
+                
+                $("#edit-delete-btn").show(); 
                 $( "#edit-popup" ).enhanceWithin().popup();
+                $("#popup-text").html('<small> Edit Move </small> ')
 
                 console.log("click"); 
                 var id = this.id.replace(/id/,'').split(','); 
@@ -286,6 +323,31 @@
 
                 $("#edit-save-btn").val(id[0]+','+id[1])
             })
+
+            $(document).on('click', '.add-move-to-existing', function(){
+               
+                $("#edit-delete-btn").hide(); 
+                $( "#edit-popup" ).enhanceWithin().popup();
+                $("#popup-text").html('<small>Add Move</small>');
+
+                console.log("click. Trying to add move"); 
+                var id = this.id.replace(/id/,'')
+                console.log(id); 
+                $("#edit-title").val(''); 
+                $("#edit-minute-slider").val(0); 
+                $("#edit-second-slider").val(0); 
+                $("#edit-second-slider").slider("refresh"); 
+                $("#edit-minute-slider").slider("refresh"); 
+                $("#edit-save-btn").val(id+','+json.workouts[id].moves.length)//Add new move to workout id[0]
+            })
+
+            $(document).on('click', '.delete-workout', function(){
+                var id = this.id.replace(/id/,'')
+                json.workouts.remove(parseInt(id)); 
+                console.log("Removing workout with id: "+id)
+                populateHTML(); 
+            })
+
 
             $("#save-btn").click(function() { 
                 //Submit json file to server
@@ -331,6 +393,18 @@
 
             $("#edit-cancel-btn").click(function(){ 
                 $("#popup-error").fadeOut(); 
+                $("#edit-popup").popup('close');   
+            })
+
+
+
+            $("#edit-delete-btn").click(function(){ 
+                var id = $("#edit-save-btn").val().split(',');
+                //Deleting the last move --> Delete workout 
+                if (json.workouts[id[0]].moves.length == 1)  json.workouts.remove(parseInt(id[0])); 
+                else json.workouts[id[0]].moves.remove(parseInt(id[1])); 
+
+                populateHTML(); 
                 $("#edit-popup").popup('close');   
             })
 
