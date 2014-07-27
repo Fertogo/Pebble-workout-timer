@@ -28,6 +28,16 @@
                 background-color: #FFA6A6!important;
              }
 
+            .success{ 
+                background-color: #B5FDC6!important;
+                padding: 3px;
+             }
+
+             .info{ 
+                background-color: #D3DEFF!important;
+                padding: 3px;
+             }
+
              .add-move-to-existing,.delete-workout{ 
                 padding:0;
                 border:0;
@@ -48,7 +58,7 @@
             <div data-role="content"> 
                 <div class="error" id="update" hidden><strong> There is an update for this app available on the Pebble appstore. </strong> </div>
                 <h2>Manage Workouts <a href="#info" data-transition="flip"><button data-inline="true" data-mini="true" data-icon="info"> FAQ </button></a></h2> 
-
+                <div id="loading" class="info">Loading your workouts, please wait. </div> 
                 <div data-role="collapsibleset" data-content-theme="a" data-iconpos="left" data-collapsed-icon="carat-d" data-expanded-icon="carat-u" id="workout-list"> 
                 </div> 
                 <a href="#add"><button data-inline="true" data-mini="true" data-icon="plus"> Add Workout </button></a> 
@@ -57,6 +67,8 @@
                     <div class="ui-block-a" >  <a href="#" data-rel="back"><button id = "cancel-btn" data-theme="d" data-icon="delete" > Cancel </button> </a> </div> 
                     <div class="ui-block-b" > <button id = "save-btn" class="ui-btn-active" data-icon="check"> Save</button>  </div> 
                 </fieldset>
+                <div class="success" id="success" hidden> Changes saved! Please open this on your phone (from the pebble app) and click save to appy changes on Pebble </div> 
+                <div class="info" id="bitly">Go to this link to make make changes from your computer! <br> <span id="bitly-link"></span>  </div> 
             </div> 
 
         </div> 
@@ -140,7 +152,7 @@
                 <div class="ui-block-a" >  <button id = "edit-cancel-btn" data-theme="d" data-icon="delete" > Cancel </button> </div> 
                 <div class="ui-block-b" > <button id = "edit-save-btn" class="ui-btn-active" data-icon="check"> Done</button>  </div> 
             </fieldset>
-            <div class = "error" id="popup-error" hidden> Please enter a valid title and time </div>    
+            <div class = "error" id="popup-error" hidden> Please enter a valid title and time </div>   
         </div> <!-- End Edit Workout Popup --> 
 
     </body>
@@ -291,8 +303,9 @@
                     console.log("got a response! "); 
                     jsonstring = response.responseText.replace(/\\"/g, '"'); //Unescape escaped ""
                     json = $.parseJSON(jsonstring); 
+                    $("#loading").hide(); 
                     //Populate HTML
-                    populateHTML();   
+                    populateHTML();  
                 }
               },
 
@@ -358,6 +371,7 @@
                   success: function(data, textStatus, jqXHR){
                     console.log("Server received message"); 
                     console.log(textStatus, data, jqXHR); 
+                    $("#success").show();
                     document.location = "pebblejs://close#" +encodeURIComponent(JSON.stringify(json)) ; 
                     },
 
@@ -411,6 +425,20 @@
             $("#cancel-btn").click(function() { 
                 document.location = "pebblejs://close#" 
             }) 
+
+            $.getJSON(
+                "http://api.bitly.com/v3/shorten?callback=?", 
+                { 
+                    "format": "json",
+                    "apiKey": "MY_API_KEY",  //Hidden from public repo
+                    "login": "fertogo",
+                    "longUrl": $(location).attr('href')
+                },
+                function(response)
+                {
+                    $("#bitly-link").html('<a href="'+response.data.url+'"">'+response.data.url+'</a>'); 
+                }
+    );
         })
 
     </script> 
