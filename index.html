@@ -72,6 +72,7 @@
                     <div class="ui-block-a" >  <a href="#" data-rel="back"><button id = "cancel-btn" data-theme="d" data-icon="delete" > Cancel </button> </a> </div> 
                     <div class="ui-block-b" > <button id = "save-btn" class="ui-btn-active" data-icon="check"> Save</button>  </div> 
                 </fieldset>
+                <div class="error" id="main-error" hidden> Please add at least one workout to save </div>
                 <div class="success" id="success" hidden> Changes saved! Please open this on your phone (from the pebble app) and click save to appy changes on Pebble </div> 
                 <div class="info" id="bitly">Go to this link to make make changes from your computer! <br> <span id="bitly-link"></span>  </div> 
             </div> 
@@ -428,27 +429,32 @@
 
 
             $("#save-btn").click(function() { 
-                //Submit json file to server
-                $.ajax({
-                  type: "POST",
-                  url: 'save.php?token='+token,
-                  data: {"data": JSON.stringify(json)},
-                  success: function(data, textStatus, jqXHR){
-                    console.log("Server received message"); 
-                    console.log(textStatus, data, jqXHR); 
-                    $("#success").fadeIn();
-                    document.location = "pebblejs://close#" +encodeURIComponent(JSON.stringify(json)) ; 
-                    },
+                if (json.workouts.length < 1) $("#main-error").fadeIn();
 
-                  complete: function(){console.log("Send message to PHP")},
-                  error: function(jqXHR, textStatus, errorThrown) {
-                    console.log("Error: you are weak. ")
-                    console.log(textStatus, errorThrown, jqXHR.responseText);
-                    }
-                });
+                else {
+                    //Submit json file to server
+                    $.ajax({
+                      type: "POST",
+                      url: 'save.php?token='+token,
+                      data: {"data": JSON.stringify(json)},
+                      success: function(data, textStatus, jqXHR){
+                        console.log("Server received message"); 
+                        console.log(textStatus, data, jqXHR); 
+                        $("#success").fadeIn();
+                        $("#main-error").hide();
+                        document.location = "pebblejs://close#" +encodeURIComponent(JSON.stringify(json)) ; 
+                        },
 
-                console.log("ajax funciton called")
-                console.log(json);                
+                      complete: function(){console.log("Send message to PHP")},
+                      error: function(jqXHR, textStatus, errorThrown) {
+                        console.log("Error: you are weak. ")
+                        console.log(textStatus, errorThrown, jqXHR.responseText);
+                        }
+                    });
+
+                    console.log("ajax funciton called")
+                    console.log(json); 
+                }               
             })
 
             $("#edit-save-btn").click(function(){ 
