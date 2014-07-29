@@ -347,6 +347,7 @@
         parser.href = document.URL; 
         var urlinfo = parser.search.slice(6).split(',') //Split url into array of info. Current Format [token,version]
         var token = urlinfo[0]; //Unique to Pebble account and this app!
+        var version = urlinfo[1]; 
         //Open user file 
         var jsonstring = false
 
@@ -357,6 +358,8 @@
               this.length = from < 0 ? this.length + from : from;
               return this.push.apply(this, rest);
             };
+
+            if (!version) document.location = "http://www.fernandotrujano.com/pebble/ver1.html";
             
             //Initialize Popup
             $( "#edit-popup" ).enhanceWithin().popup();
