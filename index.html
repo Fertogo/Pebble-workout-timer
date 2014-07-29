@@ -1,7 +1,7 @@
 <!-- 
     Pebble Workout timer. By Fernando Trujano
     trujano@mit.edu
-    v2.0. Let's users see and edit workouts online. 
+    v2.0. Lets users see and edit workouts online. 
 --> 
 
 <html>
@@ -14,6 +14,8 @@
                 text-align: center; 
                 background-color: rgba(255, 0,0,.2);
                 padding: 3px;
+                border: 1px solid red;
+                margin-bottom: 5px;
             }
 
             a:link {
@@ -31,11 +33,15 @@
             .success{ 
                 background-color: #B5FDC6!important;
                 padding: 3px;
+                border: 1px solid #0A8000;
+                margin-bottom: 5px;
              }
 
              .info{ 
                 background-color: #D3DEFF!important;
                 padding: 3px;
+                border: 1px solid #0040FF;
+                margin-bottom: 5px;
              }
 
              .add-move-to-existing,.delete-workout{ 
@@ -74,25 +80,43 @@
 
         <!-- FAQ Page --> 
         <style> 
-            .ui-listview>li p{ 
+            .ui-listview>li p, .ui-listview>.ui-li-static, .ui-listview>.ui-li-divider, .ui-listview>li>a.ui-btn{ 
                 overflow: visible;
                 white-space: normal;
             }
         </style>
         <div data-role="page" id="info">
-            <h3> <a href="#main" data-transition="flip"><button data-inline="true" data-mini="true" data-icon="back"> Back</button></a> Frequently Asked Questions </h1> 
-            <ul data-role="listview"> 
-                <li> How do I add a workout? 
-                    <p> On the Pebble app, find this app and click on the settings icon. Type in a workout title and add moves by using the sliders and textbox. You can add as many moves as you want.  When you are done, click on Add workout. The workout should appear on your Pebble. </p>  </li> 
-                <li> How do I delete a workout? 
-                    <p> On the Pebble app, with the workout selected, press and hold the middle button. The pebble should vibrate and the workout should dissapear. </p>  </li> 
-                <li>  How do I pause/resume a timer?
-                    <p> While a timer is running, simply press the middle button to pause or resume. </p>  </li> 
-                 <li> Can I suggest a new feature?
-                    <p> Yes, please. That would be awesome. If you have any ideas to improve this app, or ideas for another app please email me at <a href="mailto:trujano.fernando@gmail.com?subject=App Suggestion"> trujano.fernando@gmail.com </a>  </p>  </li>                
-                <li> Something went wrong!
-                    <p> That is not a question. If you think you found a bug, please <a href="mailto:trujano.fernando@gmail.com?subject=Custom Workout Timer bug!"> email </a> me the details. Uninstalling and reinsalling the app might solve your problem for now.  </p>  </li> 
-            </ul> 
+            <div data-role="content"> 
+                <h3> <a href="#main" data-transition="flip"><button data-inline="true" data-mini="true" data-icon="back"> Back</button></a> Frequently Asked Questions <small> Custom Workout Timer v2.0</small> </h1> 
+                <ul data-role="listview"> 
+                    <li> How do I add a workout? 
+                        <p> On the Pebble app, find this app and click on the settings icon, then click on the "Add a workout button". Type in a workout title and add moves by using the sliders and textbox. You can add as many moves as you want.  When you are done, click on Add workout. Then click the blue "save" button. The workout should appear on your Pebble. </p>  </li> 
+                    <li> How do I delete a workout? 
+                        <p> Expand the workout you want to delete on the Online Workout Manager. Then click on the red "delete" button.  </p>  </li> 
+                    <li>  Can I add a move to an exisiting workout?
+                        <p> Yes, after expanding the workout click on the add move button and fill in the info.</p>  </li>
+                    <li>  Can I edit moves after I add them? 
+                        <p> Yes, after expanding the workout click on the move you'd like to edit. From there, you can change it's name, time or delete it. </p>  </li> 
+                    <li>  Phone keyboards suck, can I do all of this from my computer? 
+                        <p> Yes, you can manage all of your workouts from your computer! Go back to the main page, and there should be a link at the bottom. Go to this link on your computer, make the necesary changes and save. To apply the changes to the Pebble, simply go back to the workout manager from your phone and click save.  </p>  </li> 
+                    <li>  How do I pause/resume a timer?
+                        <p> While a timer is running, simply press the middle button to pause or resume. </p>  </li> 
+                     <li> Can I suggest a new feature?
+                        <p> Yes, please. That would be awesome. If you have any ideas to improve this app, or ideas for another app please email me at <a href="mailto:trujano.fernando@gmail.com?subject=App Suggestion"> trujano.fernando@gmail.com </a>  </p>  </li>                
+                    <li> Something went wrong!
+                        <p> That is not a question. If you think you found a bug, please <a href="mailto:trujano.fernando@gmail.com?subject=Custom Workout Timer bug!"> email </a> me the details. Check below for known issues and how to fix them.   </p>  </li>
+                    <li> Who are you? 
+                        <p> Hi, I am <a href="http://www.fernandotrujano.com"> Fernando Trujano </a>, a happy Pebble owner and college sophomore. If you like this app please give it a "heart" on the Pebble appstore.I smile everytime I see the count go up :)  </p>  </li> 
+                </ul> 
+                <hr> 
+                <h2> Known Issues </h2> 
+                <ul data-role="listview"> 
+                    <li> Workout name changes to a number
+                        <p><strong> Temporary Fix: </strong> Go to the workout manager and save your workouts back to Pebble. </p> </li> 
+                    <li> Workout does not start
+                        <p><strong> Temporary Fix: </strong> Wait a couple of seconds and try again. </p> </li> 
+                </ul> 
+            </div> 
         </div> 
 
         <!-- Add workout page --> 
@@ -332,8 +356,7 @@
               this.length = from < 0 ? this.length + from : from;
               return this.push.apply(this, rest);
             };
-            //Todo * Check if there is update available
-
+            
             //Initialize Popup
             $( "#edit-popup" ).enhanceWithin().popup();
             $('.slider').slider();
@@ -413,7 +436,7 @@
                   success: function(data, textStatus, jqXHR){
                     console.log("Server received message"); 
                     console.log(textStatus, data, jqXHR); 
-                    $("#success").show();
+                    $("#success").fadeIn();
                     document.location = "pebblejs://close#" +encodeURIComponent(JSON.stringify(json)) ; 
                     },
 
