@@ -1,8 +1,7 @@
 //Custom Workout Timer for Pebble. v 2.0
 //By Fernando Trujano
 //    trujano@mit.edu
-// 6/30/2014
-char * ver = "ver:1.0"; 
+// 7/29/2014
 
 #include "pebble.h"
 #include<stdlib.h>
@@ -15,6 +14,7 @@ static MenuLayer *menu_layer;
   
 #define NUM_MENU_SECTIONS 1
 int NUM_FIRST_MENU_ITEMS = 0 ; //# of workout saved by user (Key 1 on internal storage) // Set on main 
+bool instructions = false; 
 
 char * workout_names[20]; //Save up to 20 workouts
 
@@ -22,14 +22,13 @@ char *readFromStorage(int key) {
   char * total; 
   total = "Error"; 
   if (persist_exists(key)){ 
-    persist_read_string(key, total, 256); //Max Size  
-    //APP_LOG(APP_LOG_LEVEL_DEBUG,"Reading from storage");  
-    //APP_LOG(APP_LOG_LEVEL_DEBUG,"Total: %s", total);
-    char * s = total;    
+    persist_read_string(key, total, 254); //Max Size  //Optimize
+    char * s = total;  
+    APP_LOG(APP_LOG_LEVEL_DEBUG,"Read From Storage: Key: %i , Value: %s", key,s);
     return s; 
   }
-  APP_LOG(APP_LOG_LEVEL_DEBUG,"Reading from storage: Key not found");
-  return "0";  
+  APP_LOG(APP_LOG_LEVEL_DEBUG,"Reading from storage: Key %i not found", key);
+  return "Error";  
 }
 
 void sendMessage(char* message) { 
@@ -38,32 +37,6 @@ void sendMessage(char* message) {
  	dict_write_cstring(iter,1, message);
  	app_message_outbox_send();
   APP_LOG(APP_LOG_LEVEL_DEBUG,"Message \"%s\" sent to phone", message);
-}
-
-//Not updated for v2.0.
-//Todo - disable or send a request to delete item from server. 
-static void deleteFromStorage(int key){ 
-    if (persist_exists(key)){
-      char s1[12] = "delete,";
-      char * s2 = readFromStorage(key);
-      strcat(s1,s2);
-      sendMessage(s1);  
-      
-      persist_delete(key); //Delete workout 
-        
-      for (int i = key; i < NUM_FIRST_MENU_ITEMS; i++){ 
-        persist_write_string(i, readFromStorage(i+1)); //Re-arrange memory   
-        APP_LOG(APP_LOG_LEVEL_DEBUG,"Setting workout: '%s' from key %i to %i", readFromStorage(i+1), i+1, i);    
-      }
-      //Convert int to string    
-      char buffer[10];
-      snprintf(buffer, 10, "%d", atoi(readFromStorage(0))-1);  
-      persist_write_string(0, buffer); //Decrease workouts by one  
-      APP_LOG(APP_LOG_LEVEL_DEBUG,"Key %i deleted from storage", key);    
-      
-    }
-  
-    else APP_LOG(APP_LOG_LEVEL_DEBUG,"Delete from storage: Key %i not found", key);
 }
 
 void clearMemory() { 
@@ -76,7 +49,9 @@ void clearMemory() {
 }
 
 void updateMenu(){ 
+  APP_LOG(APP_LOG_LEVEL_DEBUG,"Updating Menu...");
   NUM_FIRST_MENU_ITEMS = atoi(readFromStorage(0));
+  APP_LOG(APP_LOG_LEVEL_DEBUG,"NUM_FIRST_MENU_ITEMS= %i", NUM_FIRST_MENU_ITEMS);
   //Populate workout_names array
   for (int i = 0; i<NUM_FIRST_MENU_ITEMS; i++) { 
     char * temp = readFromStorage(i+1); 
@@ -84,10 +59,10 @@ void updateMenu(){
     workout_names[i]= malloc(sizeof(char)*(strlen(temp)+1)); // Save workout titles
     strcpy(workout_names[i],  temp);
   }  
+  APP_LOG(APP_LOG_LEVEL_DEBUG,"Done with for loop! ");
   menu_layer_reload_data(menu_layer); //Reload the menu 
   vibes_short_pulse(); 
 }
-
 
 
 static Window *window;
@@ -289,28 +264,33 @@ enum {
 
 void addWorkout(char* title){ 
         APP_LOG(APP_LOG_LEVEL_DEBUG, "adding workout!");
+      
         int totalworkouts = atoi(readFromStorage(0));
         NUM_FIRST_MENU_ITEMS = totalworkouts; //Update NUM_FIRST_MENU_ITEMS
         //Add message to storage and increase workout counter 
         persist_write_string(NUM_FIRST_MENU_ITEMS+1, title); // Add to Totalworkouts +1 
         APP_LOG(APP_LOG_LEVEL_DEBUG,"Message Added to Storage!");
-        APP_LOG(APP_LOG_LEVEL_DEBUG,"I just added workout %s to index %i", title, NUM_FIRST_MENU_ITEMS+1);  
-
+        APP_LOG(APP_LOG_LEVEL_DEBUG,"I just added workout %s to index %i", title, NUM_FIRST_MENU_ITEMS+1); 
+  
+        if (instructions) { //First workout in list
+            APP_LOG(APP_LOG_LEVEL_DEBUG, "Creating Menu Window");
+            //Create Window 
+            window = window_create(); 
+            window_set_window_handlers(window, (WindowHandlers) {
+              .load = window_load,
+              .unload = window_unload,
+            });
+            window_stack_push(window, true /* Animated */);
+            instructions = false; 
+        }
+  
         //Convert int to string
         char buffer[10];
         snprintf(buffer, 10, "%d", NUM_FIRST_MENU_ITEMS+1);  
         persist_write_string(0, buffer); //Increment workouts
 
         APP_LOG(APP_LOG_LEVEL_DEBUG,"Total Workouts %s", buffer); 
-        if (atoi(buffer) < 1) {
-          window = window_create(); 
-          window_set_window_handlers(window, (WindowHandlers) {
-            .load = window_load,
-            .unload = window_unload,
-          });
-          window_stack_push(window, true /* Animated */);
-          updateMenu(); 
-        }
+
 }
 
 //Minified Strtok (ignore) Thanks to Steve Caldwell for trick. 
@@ -348,6 +328,7 @@ static void in_received_handler(DictionaryIterator *iter, void *context) {
    
     if (strcmp(type,"workouts") == 0) { 
         clearMemory(); 
+    
         APP_LOG(APP_LOG_LEVEL_DEBUG, "adding workouts!");
         char * workouttitle;
   
@@ -357,14 +338,11 @@ static void in_received_handler(DictionaryIterator *iter, void *context) {
           APP_LOG(APP_LOG_LEVEL_DEBUG, workouttitle);
           addWorkout(workouttitle); 
           workouttitle = strtok (NULL, ",");
-        }     
-        updateMenu(); 
+        }  
+
+      updateMenu(); 
     }
-  
-   else if (strcmp(type,"reset") == 0) { 
-     clearMemory(); 
-   }
-    
+      
     else if (strcmp(type,"end") == 0) { 
         APP_LOG(APP_LOG_LEVEL_DEBUG, "Workout Finished");
         //Show end Card
@@ -397,12 +375,13 @@ static void in_received_handler(DictionaryIterator *iter, void *context) {
     } 
  }
 
+
 int main(void) {
   APP_LOG(APP_LOG_LEVEL_DEBUG,"C Code Started");
 
   if (!persist_exists(0)) { 
         APP_LOG(APP_LOG_LEVEL_DEBUG,"First time using app");
-        persist_write_string(0, "0"); //Increment workouts
+        persist_write_string(0, "0"); // Set workouts to 0
   }
 
   //Menu data
@@ -418,7 +397,16 @@ int main(void) {
   app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
   app_message_register_inbox_received((AppMessageInboxReceived) in_received_handler);
   
- 
+   
+  /* //Print Memory for debugging 
+  APP_LOG(APP_LOG_LEVEL_DEBUG,"Printing Memory");   
+  int i = 0; 
+  while (persist_exists(i)){ 
+         APP_LOG(APP_LOG_LEVEL_DEBUG,"Memory: %i, Value: %s ", i,readFromStorage(i));   
+        i++; 
+  } 
+  */
+  
   if (totalworkouts == 0) { 
         //Show Instructions
         static Window *ins_window; 
@@ -433,6 +421,7 @@ int main(void) {
         text_layer_set_font(ins_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
         text_layer_set_text_alignment(ins_text, GTextAlignmentLeft);
         layer_add_child(ins_window_layer, text_layer_get_layer(ins_text)); 
+        instructions = true; 
   }
   
   else{
@@ -447,4 +436,6 @@ int main(void) {
   app_event_loop();
   text_layer_destroy(text_layer);
   window_destroy(window);
+  APP_LOG(APP_LOG_LEVEL_DEBUG,"Exiting..."); 
+
 }
