@@ -10,6 +10,7 @@
 #define WAKEUP_REASON 0
 #define PERSIST_KEY_WAKEUP_ID 337
 #define PERSIST_KEY_WAKUP_NAME 338
+#define PERSIST_PAUSE_KEY 339
   
 static Window *window;
 static TextLayer *text_layer;
@@ -212,12 +213,20 @@ void pause_click_handler(ClickRecognizerRef recognizer, void *context) {
   
     APP_LOG(APP_LOG_LEVEL_DEBUG,"Pause Button clicked"); 
   if (paused) { 
+    persist_delete(PERSIST_PAUSE_KEY); 
     text_layer_set_text(paused_text, "\0"); //Empty String
+    time_t future_time = time(NULL) + timer_time;
+    s_wakeup_id = wakeup_schedule(future_time, 0, true); 
+    persist_write_int(PERSIST_KEY_WAKEUP_ID, s_wakeup_id); // Save wakeup id! 
     timer = app_timer_register(1000 /* milliseconds */, timer_callback, NULL);
     paused = false; 
+    
   } 
   else { 
     app_timer_cancel(timer);
+    wakeup_cancel(s_wakeup_id); 
+    persist_write_int(PERSIST_PAUSE_KEY, timer_time);
+
     text_layer_set_text(paused_text, "Paused");
     paused = true; 
   }
@@ -265,9 +274,11 @@ void createTimer(char* name, char* time) {  //Creates Timer window
   
 
     timer_time = atoi(time);
-  
-
-    timer = app_timer_register(1 /* milliseconds */, timer_callback, NULL);  
+    if (paused) { 
+          text_layer_set_text(paused_text, "Paused");
+    }
+    else { 
+      timer = app_timer_register(1 /* milliseconds */, timer_callback, NULL);  } 
 
 
   
@@ -411,24 +422,36 @@ static void wakeup_handler(WakeupId id, int32_t reason) {
   APP_LOG(APP_LOG_LEVEL_DEBUG,"WAkey wakey, kate is a loser %i", (int)reason);
   persist_delete(PERSIST_KEY_WAKEUP_ID);
   //persist_delete(PERSIST_KEY_WAKEUP_NAME);
+  psleep(300); 
   vibes_long_pulse(); //Vibrate Pebble 
+  
   sendMessage("done"); //Go to next workout, if possible
 }
 
 static void checkScheduledWakeup(void){ 
 
   if (persist_exists(PERSIST_KEY_WAKEUP_ID) && persist_read_int(PERSIST_KEY_WAKEUP_ID) > 0){ 
-      s_wakeup_id = persist_read_int(PERSIST_KEY_WAKEUP_ID); 
-    //There is a wakeup scheduled 
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Wakup already scheduled");
-    time_t timestamp = 0;
-    wakeup_query(s_wakeup_id, &timestamp);
-    int seconds_remaining = timestamp - time(NULL);
-    snprintf(time_str, 10, "%d", seconds_remaining);
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Seconds remaining %i", seconds_remaining);
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "%s", time_str);
     char* name = readFromStorage(PERSIST_KEY_WAKUP_NAME); 
-    createTimer(name, time_str); 
+
+    if (persist_exists(PERSIST_PAUSE_KEY)){ 
+      int time_left =persist_read_int(PERSIST_PAUSE_KEY); 
+      snprintf(time_str, 10, "%d", time_left);
+      paused = true; 
+      createTimer(name, time_str); 
+    }
+    
+    else{ 
+        s_wakeup_id = persist_read_int(PERSIST_KEY_WAKEUP_ID); 
+      //There is a wakeup scheduled 
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Wakup already scheduled");
+      time_t timestamp = 0;
+      wakeup_query(s_wakeup_id, &timestamp);
+      int seconds_remaining = timestamp - time(NULL);
+      snprintf(time_str, 10, "%d", seconds_remaining);
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Seconds remaining %i", seconds_remaining);
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "%s", time_str);
+      createTimer(name, time_str); 
+    }
   }
 }
 
