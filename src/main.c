@@ -7,10 +7,17 @@
 #include<stdlib.h>
 #include<string.h> 
   
+#define WAKEUP_REASON 0
+#define PERSIST_KEY_WAKEUP_ID 337
+#define PERSIST_KEY_WAKUP_NAME 338
+  
 static Window *window;
 static TextLayer *text_layer;
 static AppTimer *timer;
 static MenuLayer *menu_layer;
+
+
+static WakeupId s_wakeup_id;
   
 #define NUM_MENU_SECTIONS 1
 int NUM_FIRST_MENU_ITEMS = 0 ; //# of workout saved by user (Key 1 on internal storage) // Set on main 
@@ -174,14 +181,19 @@ static void time_window_disappear(Window *window){
   // Cancel the timer
   APP_LOG(APP_LOG_LEVEL_DEBUG,"Timer Window Disappeared"); 
   app_timer_cancel(timer); 
+  //Save Wakeup Id
+ // persist_write_string(0, "0"); // Set workouts to 0
 
 }
 //Called every one second
 static void timer_callback(void *data) {
       if (timer_time==0) { 
+        persist_delete(PERSIST_KEY_WAKEUP_ID);
+        wakeup_cancel(s_wakeup_id); 
         vibes_long_pulse(); //Vibrate Pebble 
         window_stack_pop(false); 
         sendMessage("done"); //Go to next workout, if possible
+        
       } 
       else { 
         timer_time--;    
@@ -197,6 +209,7 @@ static void timer_callback(void *data) {
 //Pause the timer 
 bool paused = false; 
 void pause_click_handler(ClickRecognizerRef recognizer, void *context) { 
+  
     APP_LOG(APP_LOG_LEVEL_DEBUG,"Pause Button clicked"); 
   if (paused) { 
     text_layer_set_text(paused_text, "\0"); //Empty String
@@ -216,6 +229,9 @@ void timerwindow_config_provider(Window * window){
 //Create Timer Function 
 static Window *timer_window; 
 static TextLayer *title_text; 
+
+
+
 void createTimer(char* name, char* time) {  //Creates Timer window
     APP_LOG(APP_LOG_LEVEL_DEBUG,"Creating Timer with name: %s and time: %s",name, time); 
     
@@ -247,8 +263,16 @@ void createTimer(char* name, char* time) {  //Creates Timer window
     text_layer_set_text_alignment(paused_text, GTextAlignmentCenter);
     layer_add_child(timer_window_layer, text_layer_get_layer(paused_text));
   
+
     timer_time = atoi(time);
-    timer = app_timer_register(1 /* milliseconds */, timer_callback, NULL);     
+  
+
+    timer = app_timer_register(1 /* milliseconds */, timer_callback, NULL);  
+
+
+  
+
+  
 }
 
 void window_unload(Window *window) {
@@ -263,6 +287,8 @@ enum {
    };
 
 void addWorkout(char* title){ 
+
+
         APP_LOG(APP_LOG_LEVEL_DEBUG, "adding workout!");
       
         int totalworkouts = atoi(readFromStorage(0));
@@ -370,15 +396,55 @@ static void in_received_handler(DictionaryIterator *iter, void *context) {
     }
   
     else { //It is a Timer. Type = Title, message = duration
-        APP_LOG(APP_LOG_LEVEL_DEBUG,"Timer message recieved with value %s", message);  
-        createTimer(type,message);     
+        APP_LOG(APP_LOG_LEVEL_DEBUG,"Timer message recieved with value %s", message); 
+      
+        time_t future_time = time(NULL) + atoi(message);
+        s_wakeup_id = wakeup_schedule(future_time, 0, true); //Create Wakeup Timer
+        persist_write_int(PERSIST_KEY_WAKEUP_ID, s_wakeup_id); // Save wakeup id! 
+        persist_write_string( PERSIST_KEY_WAKUP_NAME, type);  //Save workout name
+        createTimer(type,message);  
     } 
  }
 
+static void wakeup_handler(WakeupId id, int32_t reason) {
+  // The app has woken!
+  APP_LOG(APP_LOG_LEVEL_DEBUG,"WAkey wakey, kate is a loser %i", (int)reason);
+  persist_delete(PERSIST_KEY_WAKEUP_ID);
+  //persist_delete(PERSIST_KEY_WAKEUP_NAME);
+  vibes_long_pulse(); //Vibrate Pebble 
+  sendMessage("done"); //Go to next workout, if possible
+}
+
+static void checkScheduledWakeup(void){ 
+
+  if (persist_exists(PERSIST_KEY_WAKEUP_ID) && persist_read_int(PERSIST_KEY_WAKEUP_ID) > 0){ 
+      s_wakeup_id = persist_read_int(PERSIST_KEY_WAKEUP_ID); 
+    //There is a wakeup scheduled 
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Wakup already scheduled");
+    time_t timestamp = 0;
+    wakeup_query(s_wakeup_id, &timestamp);
+    int seconds_remaining = timestamp - time(NULL);
+    snprintf(time_str, 10, "%d", seconds_remaining);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Seconds remaining %i", seconds_remaining);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "%s", time_str);
+    char* name = readFromStorage(PERSIST_KEY_WAKUP_NAME); 
+    createTimer(name, time_str); 
+  }
+}
 
 int main(void) {
+  
   APP_LOG(APP_LOG_LEVEL_DEBUG,"C Code Started");
+  app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
+  app_message_register_inbox_received((AppMessageInboxReceived) in_received_handler);
+  // Subscribe to Wakeup API
+  wakeup_service_subscribe(wakeup_handler);
 
+ 
+
+  
+
+  
   if (!persist_exists(0)) { 
         APP_LOG(APP_LOG_LEVEL_DEBUG,"First time using app");
         persist_write_string(0, "0"); // Set workouts to 0
@@ -393,9 +459,7 @@ int main(void) {
     workout_names[i]= malloc(sizeof(char)*(strlen(temp)+1)); // Save workout titles
     strcpy(workout_names[i],  temp);
   }  
-   
-  app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
-  app_message_register_inbox_received((AppMessageInboxReceived) in_received_handler);
+
   
    
   /* //Print Memory for debugging 
@@ -417,7 +481,7 @@ int main(void) {
         GRect bounds = layer_get_frame(ins_window_layer); 
         ins_text = text_layer_create(GRect(0, 0, bounds.size.w /* width */, 150 /* height */));
         text_layer_set_overflow_mode(ins_text, GTextOverflowModeWordWrap ); 
-        text_layer_set_text(ins_text, "Use your phone to add workouts. On the pebble app, find this timer app and click on the settings icon. ");
+        text_layer_set_text(ins_text, "Use your phone to add workouts. On the pebble app, find this timer app and click osettings icon. ");
         text_layer_set_font(ins_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
         text_layer_set_text_alignment(ins_text, GTextAlignmentLeft);
         layer_add_child(ins_window_layer, text_layer_get_layer(ins_text)); 
@@ -432,7 +496,20 @@ int main(void) {
       });
       window_stack_push(window, true /* Animated */);
   }
+    
+    
+    // Was this a wakeup?
+  if(launch_reason() == APP_LAUNCH_WAKEUP) {
+    // The app was started by a wakeup
+    WakeupId id = 0;
+    int32_t reason = 0;
 
+    // Get details and handle the wakeup
+    wakeup_get_launch_event(&id, &reason);
+    wakeup_handler(id, reason);
+  }
+          //persist_delete(PERSIST_KEY_WAKEUP_ID);
+  checkScheduledWakeup();
   app_event_loop();
   text_layer_destroy(text_layer);
   window_destroy(window);

@@ -32,7 +32,7 @@ Pebble.addEventListener("ready", function(e){
 });
 
 Pebble.addEventListener("showConfiguration", function(){ 
-  console.log("Showing Configuration");
+  console.log("Showing Configuration v2.0");
   console.log(version); 
   Pebble.openURL("http://fernandotrujano.com/pebble/index.html?info="+Pebble.getAccountToken()+','+version); 
 });
