@@ -232,14 +232,38 @@ void pause_click_handler(ClickRecognizerRef recognizer, void *context) {
   }
 }
 
-void timerwindow_config_provider(Window * window){ 
-    window_single_repeating_click_subscribe(BUTTON_ID_SELECT, 1000, pause_click_handler);
+//Cancels the current timer
+void stop_click_handler(ClickRecognizerRef recognizer, void *context) { 
+    APP_LOG(APP_LOG_LEVEL_DEBUG,"Stop Button clicked");
+    persist_delete(PERSIST_PAUSE_KEY); 
+    app_timer_cancel(timer);
+    wakeup_cancel(s_wakeup_id); 
+    window_stack_pop(true); 
 }
+
+//Cancels the current timer and goes to the next workout
+void next_click_handler(ClickRecognizerRef recognizer, void *context) { 
+    APP_LOG(APP_LOG_LEVEL_DEBUG,"Next Button clicked"); 
+    persist_delete(PERSIST_PAUSE_KEY); 
+    app_timer_cancel(timer);
+    wakeup_cancel(s_wakeup_id); 
+    window_stack_pop(true); 
+    sendMessage("done"); 
+}
+
+void timerwindow_click_config_provider(void *context){ 
+    window_single_repeating_click_subscribe(BUTTON_ID_SELECT, 1000, pause_click_handler);
+    window_single_repeating_click_subscribe(BUTTON_ID_UP, 1000, stop_click_handler);
+    window_single_repeating_click_subscribe(BUTTON_ID_DOWN, 1000, next_click_handler);
+}
+
 //Create Timer Function 
 static Window *timer_window; 
 static TextLayer *title_text; 
-
-
+ActionBarLayer *action_bar;
+static GBitmap *stopButton;
+static GBitmap *playPauseButton;
+static GBitmap *nextButton;
 
 void createTimer(char* name, char* time) {  //Creates Timer window
     APP_LOG(APP_LOG_LEVEL_DEBUG,"Creating Timer with name: %s and time: %s",name, time); 
@@ -249,7 +273,6 @@ void createTimer(char* name, char* time) {  //Creates Timer window
         .disappear = time_window_disappear,
       });
   
-    window_set_click_config_provider(timer_window, (ClickConfigProvider) timerwindow_config_provider);
     window_stack_push(timer_window, true);
     Layer *timer_window_layer = window_get_root_layer(timer_window);
     GRect bounds = layer_get_frame(timer_window_layer);
@@ -272,6 +295,16 @@ void createTimer(char* name, char* time) {  //Creates Timer window
     text_layer_set_text_alignment(paused_text, GTextAlignmentCenter);
     layer_add_child(timer_window_layer, text_layer_get_layer(paused_text));
   
+    //Set ActionBar
+    action_bar = action_bar_layer_create(); 
+    action_bar_layer_add_to_window(action_bar, timer_window);
+    action_bar_layer_set_click_config_provider(action_bar, timerwindow_click_config_provider);
+    stopButton = gbitmap_create_with_resource(RESOURCE_ID_STOP_BUTTON);
+    playPauseButton = gbitmap_create_with_resource(RESOURCE_ID_PLAY_PAUSE_BUTTON);
+    nextButton = gbitmap_create_with_resource(RESOURCE_ID_NEXT_BUTTON);
+    action_bar_layer_set_icon(action_bar, BUTTON_ID_UP, stopButton);
+    action_bar_layer_set_icon(action_bar, BUTTON_ID_SELECT, playPauseButton);
+    action_bar_layer_set_icon(action_bar, BUTTON_ID_DOWN, nextButton);
 
     timer_time = atoi(time);
     if (paused) { 
@@ -279,11 +312,7 @@ void createTimer(char* name, char* time) {  //Creates Timer window
     }
     else { 
       timer = app_timer_register(1 /* milliseconds */, timer_callback, NULL);  } 
-
-
-  
-
-  
+ 
 }
 
 void window_unload(Window *window) {

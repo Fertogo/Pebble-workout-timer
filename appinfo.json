@@ -9,6 +9,21 @@
     "resources": {
         "media": [
             {
+                "file": "images/Stopbtn.png",
+                "name": "STOP_BUTTON",
+                "type": "png"
+            },
+            {
+                "file": "images/PausePlay.png",
+                "name": "PLAY_PAUSE_BUTTON",
+                "type": "png"
+            },
+            {
+                "file": "images/Nextbtn.png",
+                "name": "NEXT_BUTTON",
+                "type": "png"
+            },
+            {
                 "file": "images/menuicon.png",
                 "menuIcon": true,
                 "name": "MENU_ICON",
