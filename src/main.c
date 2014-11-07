@@ -74,6 +74,7 @@ void updateMenu(){
 
 
 static Window *window;
+static Window *loading_window; 
 
 //Stuff for Menu **** 
 static uint16_t menu_get_num_sections_callback(MenuLayer *menu_layer, void *data) {
@@ -126,13 +127,17 @@ void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *da
             APP_LOG(APP_LOG_LEVEL_DEBUG, "Button Clicked: %i", i);
             char *workout = readFromStorage(i+1);//Get Workout Title
             sendMessage(workout); 
+            
             //clearMemory(); 
+            window_stack_push(loading_window, true); 
+            window_stack_remove(window, false); 
           }
       }  
       break; 
   } 
 }
 
+//Depecated
 //When user long clicks on a menu Item - aka deletes item
 void menu_long_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data) {
   // Use the row to specify which item will receive the select action
@@ -173,6 +178,23 @@ void window_load(Window *window) {
 }
 // End menu stuff
 
+static TextLayer *loading_text; 
+void loading_window_load(Window *loading_window){ 
+   Layer *loading_window_layer = window_get_root_layer(loading_window);
+    GRect bounds = layer_get_frame(loading_window_layer);
+
+    loading_text = text_layer_create(GRect(0, 10, bounds.size.w /* width */, 28 /* height */));
+    text_layer_set_text(loading_text, "Loading...");
+    text_layer_set_font(loading_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+    text_layer_set_text_alignment(loading_text, GTextAlignmentCenter);
+    layer_add_child(loading_window_layer, text_layer_get_layer(loading_text));
+}
+
+void loading_window_unload(Window *loading_window){ 
+
+}
+
+
 int timer_time = 0; 
 static TextLayer *timer_text; 
 static TextLayer *paused_text; 
@@ -193,6 +215,7 @@ static void timer_callback(void *data) {
         wakeup_cancel(s_wakeup_id); 
         vibes_long_pulse(); //Vibrate Pebble 
         window_stack_pop(false); 
+        window_stack_push(loading_window, true); 
         sendMessage("done"); //Go to next workout, if possible
         
       } 
@@ -239,6 +262,7 @@ void stop_click_handler(ClickRecognizerRef recognizer, void *context) {
     app_timer_cancel(timer);
     wakeup_cancel(s_wakeup_id); 
     window_stack_pop(true); 
+    window_stack_push(window, false); 
 }
 
 //Cancels the current timer and goes to the next workout
@@ -248,6 +272,7 @@ void next_click_handler(ClickRecognizerRef recognizer, void *context) {
     app_timer_cancel(timer);
     wakeup_cancel(s_wakeup_id); 
     window_stack_pop(true); 
+    window_stack_push(loading_window, true); 
     sendMessage("done"); 
 }
 
@@ -268,6 +293,8 @@ static GBitmap *nextButton;
 void createTimer(char* name, char* time) {  //Creates Timer window
     APP_LOG(APP_LOG_LEVEL_DEBUG,"Creating Timer with name: %s and time: %s",name, time); 
     
+  window_stack_remove(loading_window, false); 
+  
     timer_window = window_create(); 
       window_set_window_handlers(timer_window, (WindowHandlers) {
         .disappear = time_window_disappear,
@@ -411,6 +438,7 @@ static void in_received_handler(DictionaryIterator *iter, void *context) {
       
     else if (strcmp(type,"end") == 0) { 
         APP_LOG(APP_LOG_LEVEL_DEBUG, "Workout Finished");
+        window_stack_remove(loading_window, false);
         //Show end Card
         static Window *end_window; 
         static TextLayer *end_text;
@@ -454,35 +482,11 @@ static void wakeup_handler(WakeupId id, int32_t reason) {
   psleep(300); 
   vibes_long_pulse(); //Vibrate Pebble 
   
+  window_stack_push(loading_window, false); 
   sendMessage("done"); //Go to next workout, if possible
 }
 
-static void checkScheduledWakeup(void){ 
 
-  if (persist_exists(PERSIST_KEY_WAKEUP_ID) && persist_read_int(PERSIST_KEY_WAKEUP_ID) > 0){ 
-    char* name = readFromStorage(PERSIST_KEY_WAKUP_NAME); 
-
-    if (persist_exists(PERSIST_PAUSE_KEY)){ 
-      int time_left =persist_read_int(PERSIST_PAUSE_KEY); 
-      snprintf(time_str, 10, "%d", time_left);
-      paused = true; 
-      createTimer(name, time_str); 
-    }
-    
-    else{ 
-        s_wakeup_id = persist_read_int(PERSIST_KEY_WAKEUP_ID); 
-      //There is a wakeup scheduled 
-      APP_LOG(APP_LOG_LEVEL_DEBUG, "Wakup already scheduled");
-      time_t timestamp = 0;
-      wakeup_query(s_wakeup_id, &timestamp);
-      int seconds_remaining = timestamp - time(NULL);
-      snprintf(time_str, 10, "%d", seconds_remaining);
-      APP_LOG(APP_LOG_LEVEL_DEBUG, "Seconds remaining %i", seconds_remaining);
-      APP_LOG(APP_LOG_LEVEL_DEBUG, "%s", time_str);
-      createTimer(name, time_str); 
-    }
-  }
-}
 
 int main(void) {
   
@@ -491,10 +495,6 @@ int main(void) {
   app_message_register_inbox_received((AppMessageInboxReceived) in_received_handler);
   // Subscribe to Wakeup API
   wakeup_service_subscribe(wakeup_handler);
-
- 
-
-  
 
   
   if (!persist_exists(0)) { 
@@ -522,7 +522,7 @@ int main(void) {
         i++; 
   } 
   */
-  
+    //checkScheduledWakeup();
   if (totalworkouts == 0) { 
         //Show Instructions
         static Window *ins_window; 
@@ -539,19 +539,20 @@ int main(void) {
         layer_add_child(ins_window_layer, text_layer_get_layer(ins_text)); 
         instructions = true; 
   }
-  
-  else{
       window = window_create(); 
       window_set_window_handlers(window, (WindowHandlers) {
         .load = window_load,
         .unload = window_unload,
       });
-      window_stack_push(window, true /* Animated */);
-  }
-    
-    
-    // Was this a wakeup?
-  if(launch_reason() == APP_LAUNCH_WAKEUP) {
+  
+      loading_window = window_create(); 
+      window_set_window_handlers(loading_window, (WindowHandlers) {
+        .load = loading_window_load,
+        .unload = loading_window_unload,
+      });
+  
+        // Was this a wakeup?
+if(launch_reason() == APP_LAUNCH_WAKEUP) {
     // The app was started by a wakeup
     WakeupId id = 0;
     int32_t reason = 0;
@@ -560,8 +561,47 @@ int main(void) {
     wakeup_get_launch_event(&id, &reason);
     wakeup_handler(id, reason);
   }
+  
+  
+  else if (persist_exists(PERSIST_KEY_WAKEUP_ID) && persist_read_int(PERSIST_KEY_WAKEUP_ID) > 0 ){ 
+    char* name = readFromStorage(PERSIST_KEY_WAKUP_NAME); 
+
+    if (persist_exists(PERSIST_PAUSE_KEY)){ 
+      int time_left =persist_read_int(PERSIST_PAUSE_KEY); 
+      snprintf(time_str, 10, "%d", time_left);
+      paused = true; 
+      createTimer(name, time_str); 
+    }
+    
+    else{ 
+      s_wakeup_id = persist_read_int(PERSIST_KEY_WAKEUP_ID); 
+      //There is a wakeup scheduled 
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Wakup already scheduled");
+      time_t timestamp = 0;
+      wakeup_query(s_wakeup_id, &timestamp);
+      int seconds_remaining = timestamp - time(NULL);
+      snprintf(time_str, 10, "%d", seconds_remaining);
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Seconds remaining %i", seconds_remaining);
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "%s", time_str);
+      if (seconds_remaining > 0){ 
+        createTimer(name, time_str); 
+      }
+      else{ //Temporary solution
+        window_stack_push(window, true);
+      }
+
+    }
+  }
+  
+  else{
+      window_stack_push(window, true);
+  }
+    
+      
+
+
           //persist_delete(PERSIST_KEY_WAKEUP_ID);
-  checkScheduledWakeup();
+
   app_event_loop();
   text_layer_destroy(text_layer);
   window_destroy(window);
