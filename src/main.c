@@ -1,20 +1,28 @@
 //Custom Workout Timer for Pebble. v 2.0
 //By Fernando Trujano
 //    trujano@mit.edu
-// 6/30/2014
-char * ver = "ver:1.0"; 
+// 7/29/2014
 
 #include "pebble.h"
 #include<stdlib.h>
 #include<string.h> 
   
+#define WAKEUP_REASON 0
+#define PERSIST_KEY_WAKEUP_ID 337
+#define PERSIST_KEY_WAKUP_NAME 338
+#define PERSIST_PAUSE_KEY 339
+  
 static Window *window;
 static TextLayer *text_layer;
 static AppTimer *timer;
 static MenuLayer *menu_layer;
+
+
+static WakeupId s_wakeup_id;
   
 #define NUM_MENU_SECTIONS 1
 int NUM_FIRST_MENU_ITEMS = 0 ; //# of workout saved by user (Key 1 on internal storage) // Set on main 
+bool instructions = false; 
 
 char * workout_names[20]; //Save up to 20 workouts
 
@@ -22,14 +30,13 @@ char *readFromStorage(int key) {
   char * total; 
   total = "Error"; 
   if (persist_exists(key)){ 
-    persist_read_string(key, total, 256); //Max Size  
-    //APP_LOG(APP_LOG_LEVEL_DEBUG,"Reading from storage");  
-    //APP_LOG(APP_LOG_LEVEL_DEBUG,"Total: %s", total);
-    char * s = total;    
+    persist_read_string(key, total, 254); //Max Size  //Optimize
+    char * s = total;  
+    APP_LOG(APP_LOG_LEVEL_DEBUG,"Read From Storage: Key: %i , Value: %s", key,s);
     return s; 
   }
-  APP_LOG(APP_LOG_LEVEL_DEBUG,"Reading from storage: Key not found");
-  return "0";  
+  APP_LOG(APP_LOG_LEVEL_DEBUG,"Reading from storage: Key %i not found", key);
+  return "Error";  
 }
 
 void sendMessage(char* message) { 
@@ -38,32 +45,6 @@ void sendMessage(char* message) {
  	dict_write_cstring(iter,1, message);
  	app_message_outbox_send();
   APP_LOG(APP_LOG_LEVEL_DEBUG,"Message \"%s\" sent to phone", message);
-}
-
-//Not updated for v2.0.
-//Todo - disable or send a request to delete item from server. 
-static void deleteFromStorage(int key){ 
-    if (persist_exists(key)){
-      char s1[12] = "delete,";
-      char * s2 = readFromStorage(key);
-      strcat(s1,s2);
-      sendMessage(s1);  
-      
-      persist_delete(key); //Delete workout 
-        
-      for (int i = key; i < NUM_FIRST_MENU_ITEMS; i++){ 
-        persist_write_string(i, readFromStorage(i+1)); //Re-arrange memory   
-        APP_LOG(APP_LOG_LEVEL_DEBUG,"Setting workout: '%s' from key %i to %i", readFromStorage(i+1), i+1, i);    
-      }
-      //Convert int to string    
-      char buffer[10];
-      snprintf(buffer, 10, "%d", atoi(readFromStorage(0))-1);  
-      persist_write_string(0, buffer); //Decrease workouts by one  
-      APP_LOG(APP_LOG_LEVEL_DEBUG,"Key %i deleted from storage", key);    
-      
-    }
-  
-    else APP_LOG(APP_LOG_LEVEL_DEBUG,"Delete from storage: Key %i not found", key);
 }
 
 void clearMemory() { 
@@ -76,7 +57,9 @@ void clearMemory() {
 }
 
 void updateMenu(){ 
+  APP_LOG(APP_LOG_LEVEL_DEBUG,"Updating Menu...");
   NUM_FIRST_MENU_ITEMS = atoi(readFromStorage(0));
+  APP_LOG(APP_LOG_LEVEL_DEBUG,"NUM_FIRST_MENU_ITEMS= %i", NUM_FIRST_MENU_ITEMS);
   //Populate workout_names array
   for (int i = 0; i<NUM_FIRST_MENU_ITEMS; i++) { 
     char * temp = readFromStorage(i+1); 
@@ -84,13 +67,14 @@ void updateMenu(){
     workout_names[i]= malloc(sizeof(char)*(strlen(temp)+1)); // Save workout titles
     strcpy(workout_names[i],  temp);
   }  
+  APP_LOG(APP_LOG_LEVEL_DEBUG,"Done with for loop! ");
   menu_layer_reload_data(menu_layer); //Reload the menu 
   vibes_short_pulse(); 
 }
 
 
-
 static Window *window;
+static Window *loading_window; 
 
 //Stuff for Menu **** 
 static uint16_t menu_get_num_sections_callback(MenuLayer *menu_layer, void *data) {
@@ -143,13 +127,17 @@ void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *da
             APP_LOG(APP_LOG_LEVEL_DEBUG, "Button Clicked: %i", i);
             char *workout = readFromStorage(i+1);//Get Workout Title
             sendMessage(workout); 
+            
             //clearMemory(); 
+            window_stack_push(loading_window, true); 
+            window_stack_remove(window, false); 
           }
       }  
       break; 
   } 
 }
 
+//Depecated
 //When user long clicks on a menu Item - aka deletes item
 void menu_long_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data) {
   // Use the row to specify which item will receive the select action
@@ -190,6 +178,23 @@ void window_load(Window *window) {
 }
 // End menu stuff
 
+static TextLayer *loading_text; 
+void loading_window_load(Window *loading_window){ 
+   Layer *loading_window_layer = window_get_root_layer(loading_window);
+    GRect bounds = layer_get_frame(loading_window_layer);
+
+    loading_text = text_layer_create(GRect(0, 10, bounds.size.w /* width */, 28 /* height */));
+    text_layer_set_text(loading_text, "Loading...");
+    text_layer_set_font(loading_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+    text_layer_set_text_alignment(loading_text, GTextAlignmentCenter);
+    layer_add_child(loading_window_layer, text_layer_get_layer(loading_text));
+}
+
+void loading_window_unload(Window *loading_window){ 
+
+}
+
+
 int timer_time = 0; 
 static TextLayer *timer_text; 
 static TextLayer *paused_text; 
@@ -199,14 +204,20 @@ static void time_window_disappear(Window *window){
   // Cancel the timer
   APP_LOG(APP_LOG_LEVEL_DEBUG,"Timer Window Disappeared"); 
   app_timer_cancel(timer); 
+  //Save Wakeup Id
+ // persist_write_string(0, "0"); // Set workouts to 0
 
 }
 //Called every one second
 static void timer_callback(void *data) {
       if (timer_time==0) { 
+        persist_delete(PERSIST_KEY_WAKEUP_ID);
+        wakeup_cancel(s_wakeup_id); 
         vibes_long_pulse(); //Vibrate Pebble 
         window_stack_pop(false); 
+        window_stack_push(loading_window, true); 
         sendMessage("done"); //Go to next workout, if possible
+        
       } 
       else { 
         timer_time--;    
@@ -222,34 +233,73 @@ static void timer_callback(void *data) {
 //Pause the timer 
 bool paused = false; 
 void pause_click_handler(ClickRecognizerRef recognizer, void *context) { 
+  
     APP_LOG(APP_LOG_LEVEL_DEBUG,"Pause Button clicked"); 
   if (paused) { 
+    persist_delete(PERSIST_PAUSE_KEY); 
     text_layer_set_text(paused_text, "\0"); //Empty String
+    time_t future_time = time(NULL) + timer_time;
+    s_wakeup_id = wakeup_schedule(future_time, 0, true); 
+    persist_write_int(PERSIST_KEY_WAKEUP_ID, s_wakeup_id); // Save wakeup id! 
     timer = app_timer_register(1000 /* milliseconds */, timer_callback, NULL);
     paused = false; 
+    
   } 
   else { 
     app_timer_cancel(timer);
+    wakeup_cancel(s_wakeup_id); 
+    persist_write_int(PERSIST_PAUSE_KEY, timer_time);
+
     text_layer_set_text(paused_text, "Paused");
     paused = true; 
   }
 }
 
-void timerwindow_config_provider(Window * window){ 
-    window_single_repeating_click_subscribe(BUTTON_ID_SELECT, 1000, pause_click_handler);
+//Cancels the current timer
+void stop_click_handler(ClickRecognizerRef recognizer, void *context) { 
+    APP_LOG(APP_LOG_LEVEL_DEBUG,"Stop Button clicked");
+    persist_delete(PERSIST_PAUSE_KEY); 
+    app_timer_cancel(timer);
+    wakeup_cancel(s_wakeup_id); 
+    window_stack_pop(true); 
+    window_stack_push(window, false); 
 }
+
+//Cancels the current timer and goes to the next workout
+void next_click_handler(ClickRecognizerRef recognizer, void *context) { 
+    APP_LOG(APP_LOG_LEVEL_DEBUG,"Next Button clicked"); 
+    persist_delete(PERSIST_PAUSE_KEY); 
+    app_timer_cancel(timer);
+    wakeup_cancel(s_wakeup_id); 
+    window_stack_pop(true); 
+    window_stack_push(loading_window, true); 
+    sendMessage("done"); 
+}
+
+void timerwindow_click_config_provider(void *context){ 
+    window_single_repeating_click_subscribe(BUTTON_ID_SELECT, 1000, pause_click_handler);
+    window_single_repeating_click_subscribe(BUTTON_ID_UP, 1000, stop_click_handler);
+    window_single_repeating_click_subscribe(BUTTON_ID_DOWN, 1000, next_click_handler);
+}
+
 //Create Timer Function 
 static Window *timer_window; 
 static TextLayer *title_text; 
+ActionBarLayer *action_bar;
+static GBitmap *stopButton;
+static GBitmap *playPauseButton;
+static GBitmap *nextButton;
+
 void createTimer(char* name, char* time) {  //Creates Timer window
     APP_LOG(APP_LOG_LEVEL_DEBUG,"Creating Timer with name: %s and time: %s",name, time); 
     
+  window_stack_remove(loading_window, false); 
+  
     timer_window = window_create(); 
       window_set_window_handlers(timer_window, (WindowHandlers) {
         .disappear = time_window_disappear,
       });
   
-    window_set_click_config_provider(timer_window, (ClickConfigProvider) timerwindow_config_provider);
     window_stack_push(timer_window, true);
     Layer *timer_window_layer = window_get_root_layer(timer_window);
     GRect bounds = layer_get_frame(timer_window_layer);
@@ -272,8 +322,24 @@ void createTimer(char* name, char* time) {  //Creates Timer window
     text_layer_set_text_alignment(paused_text, GTextAlignmentCenter);
     layer_add_child(timer_window_layer, text_layer_get_layer(paused_text));
   
+    //Set ActionBar
+    action_bar = action_bar_layer_create(); 
+    action_bar_layer_add_to_window(action_bar, timer_window);
+    action_bar_layer_set_click_config_provider(action_bar, timerwindow_click_config_provider);
+    stopButton = gbitmap_create_with_resource(RESOURCE_ID_STOP_BUTTON);
+    playPauseButton = gbitmap_create_with_resource(RESOURCE_ID_PLAY_PAUSE_BUTTON);
+    nextButton = gbitmap_create_with_resource(RESOURCE_ID_NEXT_BUTTON);
+    action_bar_layer_set_icon(action_bar, BUTTON_ID_UP, stopButton);
+    action_bar_layer_set_icon(action_bar, BUTTON_ID_SELECT, playPauseButton);
+    action_bar_layer_set_icon(action_bar, BUTTON_ID_DOWN, nextButton);
+
     timer_time = atoi(time);
-    timer = app_timer_register(1 /* milliseconds */, timer_callback, NULL);     
+    if (paused) { 
+          text_layer_set_text(paused_text, "Paused");
+    }
+    else { 
+      timer = app_timer_register(1 /* milliseconds */, timer_callback, NULL);  } 
+ 
 }
 
 void window_unload(Window *window) {
@@ -288,29 +354,36 @@ enum {
    };
 
 void addWorkout(char* title){ 
+
+
         APP_LOG(APP_LOG_LEVEL_DEBUG, "adding workout!");
+      
         int totalworkouts = atoi(readFromStorage(0));
         NUM_FIRST_MENU_ITEMS = totalworkouts; //Update NUM_FIRST_MENU_ITEMS
         //Add message to storage and increase workout counter 
         persist_write_string(NUM_FIRST_MENU_ITEMS+1, title); // Add to Totalworkouts +1 
         APP_LOG(APP_LOG_LEVEL_DEBUG,"Message Added to Storage!");
-        APP_LOG(APP_LOG_LEVEL_DEBUG,"I just added workout %s to index %i", title, NUM_FIRST_MENU_ITEMS+1);  
-
+        APP_LOG(APP_LOG_LEVEL_DEBUG,"I just added workout %s to index %i", title, NUM_FIRST_MENU_ITEMS+1); 
+  
+        if (instructions) { //First workout in list
+            APP_LOG(APP_LOG_LEVEL_DEBUG, "Creating Menu Window");
+            //Create Window 
+            window = window_create(); 
+            window_set_window_handlers(window, (WindowHandlers) {
+              .load = window_load,
+              .unload = window_unload,
+            });
+            window_stack_push(window, true /* Animated */);
+            instructions = false; 
+        }
+  
         //Convert int to string
         char buffer[10];
         snprintf(buffer, 10, "%d", NUM_FIRST_MENU_ITEMS+1);  
         persist_write_string(0, buffer); //Increment workouts
 
         APP_LOG(APP_LOG_LEVEL_DEBUG,"Total Workouts %s", buffer); 
-        if (atoi(buffer) < 1) {
-          window = window_create(); 
-          window_set_window_handlers(window, (WindowHandlers) {
-            .load = window_load,
-            .unload = window_unload,
-          });
-          window_stack_push(window, true /* Animated */);
-          updateMenu(); 
-        }
+
 }
 
 //Minified Strtok (ignore) Thanks to Steve Caldwell for trick. 
@@ -348,6 +421,7 @@ static void in_received_handler(DictionaryIterator *iter, void *context) {
    
     if (strcmp(type,"workouts") == 0) { 
         clearMemory(); 
+    
         APP_LOG(APP_LOG_LEVEL_DEBUG, "adding workouts!");
         char * workouttitle;
   
@@ -357,16 +431,14 @@ static void in_received_handler(DictionaryIterator *iter, void *context) {
           APP_LOG(APP_LOG_LEVEL_DEBUG, workouttitle);
           addWorkout(workouttitle); 
           workouttitle = strtok (NULL, ",");
-        }     
-        updateMenu(); 
+        }  
+
+      updateMenu(); 
     }
-  
-   else if (strcmp(type,"reset") == 0) { 
-     clearMemory(); 
-   }
-    
+      
     else if (strcmp(type,"end") == 0) { 
         APP_LOG(APP_LOG_LEVEL_DEBUG, "Workout Finished");
+        window_stack_remove(loading_window, false);
         //Show end Card
         static Window *end_window; 
         static TextLayer *end_text;
@@ -392,17 +464,42 @@ static void in_received_handler(DictionaryIterator *iter, void *context) {
     }
   
     else { //It is a Timer. Type = Title, message = duration
-        APP_LOG(APP_LOG_LEVEL_DEBUG,"Timer message recieved with value %s", message);  
-        createTimer(type,message);     
+        APP_LOG(APP_LOG_LEVEL_DEBUG,"Timer message recieved with value %s", message); 
+      
+        time_t future_time = time(NULL) + atoi(message);
+        s_wakeup_id = wakeup_schedule(future_time, 0, true); //Create Wakeup Timer
+        persist_write_int(PERSIST_KEY_WAKEUP_ID, s_wakeup_id); // Save wakeup id! 
+        persist_write_string( PERSIST_KEY_WAKUP_NAME, type);  //Save workout name
+        createTimer(type,message);  
     } 
  }
 
-int main(void) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG,"C Code Started");
+static void wakeup_handler(WakeupId id, int32_t reason) {
+  // The app has woken!
+  APP_LOG(APP_LOG_LEVEL_DEBUG,"WAkey wakey, kate is a loser %i", (int)reason);
+  persist_delete(PERSIST_KEY_WAKEUP_ID);
+  //persist_delete(PERSIST_KEY_WAKEUP_NAME);
+  psleep(300); 
+  vibes_long_pulse(); //Vibrate Pebble 
+  
+  window_stack_push(loading_window, false); 
+  sendMessage("done"); //Go to next workout, if possible
+}
 
+
+
+int main(void) {
+  
+  APP_LOG(APP_LOG_LEVEL_DEBUG,"C Code Started");
+  app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
+  app_message_register_inbox_received((AppMessageInboxReceived) in_received_handler);
+  // Subscribe to Wakeup API
+  wakeup_service_subscribe(wakeup_handler);
+
+  
   if (!persist_exists(0)) { 
         APP_LOG(APP_LOG_LEVEL_DEBUG,"First time using app");
-        persist_write_string(0, "0"); //Increment workouts
+        persist_write_string(0, "0"); // Set workouts to 0
   }
 
   //Menu data
@@ -414,11 +511,18 @@ int main(void) {
     workout_names[i]= malloc(sizeof(char)*(strlen(temp)+1)); // Save workout titles
     strcpy(workout_names[i],  temp);
   }  
-   
-  app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
-  app_message_register_inbox_received((AppMessageInboxReceived) in_received_handler);
+
   
- 
+   
+  /* //Print Memory for debugging 
+  APP_LOG(APP_LOG_LEVEL_DEBUG,"Printing Memory");   
+  int i = 0; 
+  while (persist_exists(i)){ 
+         APP_LOG(APP_LOG_LEVEL_DEBUG,"Memory: %i, Value: %s ", i,readFromStorage(i));   
+        i++; 
+  } 
+  */
+    //checkScheduledWakeup();
   if (totalworkouts == 0) { 
         //Show Instructions
         static Window *ins_window; 
@@ -429,22 +533,78 @@ int main(void) {
         GRect bounds = layer_get_frame(ins_window_layer); 
         ins_text = text_layer_create(GRect(0, 0, bounds.size.w /* width */, 150 /* height */));
         text_layer_set_overflow_mode(ins_text, GTextOverflowModeWordWrap ); 
-        text_layer_set_text(ins_text, "Use your phone to add workouts. On the pebble app, find this timer app and click on the settings icon. ");
+        text_layer_set_text(ins_text, "Use your phone to add workouts. On the pebble app, find this timer app and click osettings icon. ");
         text_layer_set_font(ins_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
         text_layer_set_text_alignment(ins_text, GTextAlignmentLeft);
         layer_add_child(ins_window_layer, text_layer_get_layer(ins_text)); 
+        instructions = true; 
   }
-  
-  else{
       window = window_create(); 
       window_set_window_handlers(window, (WindowHandlers) {
         .load = window_load,
         .unload = window_unload,
       });
-      window_stack_push(window, true /* Animated */);
+  
+      loading_window = window_create(); 
+      window_set_window_handlers(loading_window, (WindowHandlers) {
+        .load = loading_window_load,
+        .unload = loading_window_unload,
+      });
+  
+        // Was this a wakeup?
+if(launch_reason() == APP_LAUNCH_WAKEUP) {
+    // The app was started by a wakeup
+    WakeupId id = 0;
+    int32_t reason = 0;
+
+    // Get details and handle the wakeup
+    wakeup_get_launch_event(&id, &reason);
+    wakeup_handler(id, reason);
   }
+  
+  
+  else if (persist_exists(PERSIST_KEY_WAKEUP_ID) && persist_read_int(PERSIST_KEY_WAKEUP_ID) > 0 ){ 
+    char* name = readFromStorage(PERSIST_KEY_WAKUP_NAME); 
+
+    if (persist_exists(PERSIST_PAUSE_KEY)){ 
+      int time_left =persist_read_int(PERSIST_PAUSE_KEY); 
+      snprintf(time_str, 10, "%d", time_left);
+      paused = true; 
+      createTimer(name, time_str); 
+    }
+    
+    else{ 
+      s_wakeup_id = persist_read_int(PERSIST_KEY_WAKEUP_ID); 
+      //There is a wakeup scheduled 
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Wakup already scheduled");
+      time_t timestamp = 0;
+      wakeup_query(s_wakeup_id, &timestamp);
+      int seconds_remaining = timestamp - time(NULL);
+      snprintf(time_str, 10, "%d", seconds_remaining);
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Seconds remaining %i", seconds_remaining);
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "%s", time_str);
+      if (seconds_remaining > 0){ 
+        createTimer(name, time_str); 
+      }
+      else{ //Temporary solution
+        window_stack_push(window, true);
+      }
+
+    }
+  }
+  
+  else{
+      window_stack_push(window, true);
+  }
+    
+      
+
+
+          //persist_delete(PERSIST_KEY_WAKEUP_ID);
 
   app_event_loop();
   text_layer_destroy(text_layer);
   window_destroy(window);
+  APP_LOG(APP_LOG_LEVEL_DEBUG,"Exiting..."); 
+
 }
