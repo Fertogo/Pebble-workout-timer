@@ -1,8 +1,8 @@
 //Pebble JS Component of timer. 
 //By Fernando Trujano
 //    trujano@mit.edu
-// 6/30/2014
-var version = "2.0";
+// 12/10/2014
+var version = "2.5";
 //Sends workouts to watch app using Pebble.sendAppMesssage
 
 var counter = 0; 
@@ -10,12 +10,11 @@ var counter = 0;
 function setTimers(moves) { 
   //moves is supposed to be a 2D Array, but for some reason it is a string. Here is my fix. 
   var moveslist = moves.split(','); //Now this is a 1D Array
-  console.log(moves);
   console.log("On set timers. Move: " + moveslist[counter] + " Time: " +moveslist[counter+1] ); 
   sendMessage(moveslist[counter] , moveslist[counter+1]); //SendMessage(move,time)
   
   counter+=2; //Since moves is 1D
-  window.localStorage.getItem("currentMoveCounter", counter); 
+  window.localStorage.setItem("currentMoveCounter", counter); 
   console.log("Timer set, incrementing counter to " + counter); 
 }
 
@@ -53,7 +52,7 @@ Pebble.addEventListener("webviewclosed",
       var moves; 
       var workouts = []; 
       console.log(json); 
-      
+      window.localStorage.clear(); 
       //Add Each workout
       for (var workout in json.workouts) {    
         title = json.workouts[workout].title; 
@@ -70,6 +69,19 @@ Pebble.addEventListener("webviewclosed",
   }
 );
 
+
+//Tries to advance to the next workout. If there are no more workouts, it notifies the Pebble.   
+function advanceWorkout(){ 
+        if( counter+1 < moves.split(',').length) //If there is at least one move left
+          {   setTimers(moves); } 
+      else { 
+        window.localStorage.removeItem("currentMoveCounter");
+        window.localStorage.removeItem("currentWorkoutName");
+
+        sendMessage("end", ""); 
+      }
+}
+
 var moves = "";
 //Recieve message from Pebble
 Pebble.addEventListener("appmessage",
@@ -83,22 +95,12 @@ Pebble.addEventListener("appmessage",
     }
       
     else if (e.payload[1] == "resumeWorkout"){ 
+      console.log("RESUME WORKOUT MESSAGE"); 
       currentWorkoutName = window.localStorage.getItem("currentWorkoutName");
       moves = window.localStorage.getItem(currentWorkoutName); 
-      counter = window.localStorage.getItem("currentMoveCounter"); 
-      console.log("RESUME WORKOUT MESSAGE"); 
-      console.log(currentWorkoutName);
-      console.log(counter);     
+      counter = parseInt(window.localStorage.getItem("currentMoveCounter"));       
+      advanceWorkout();           
       
-      if (e.payload[2] == "done"){ 
-        if( counter+1 < moves.split(',').length) //If there is at least one move left
-            {   setTimers(moves); } 
-        else { 
-          window.localStorage.removeItem("currentMoveCounter");
-          window.localStorage.removeItem("currentWorkoutName");  
-          sendMessage("end", ""); 
-        }      
-      }
     }
     else if (e.payload[1] != "done"){ //Begin Workout     
         moves = window.localStorage.getItem(e.payload[1]);
@@ -111,14 +113,7 @@ Pebble.addEventListener("appmessage",
 
     else { 
       //console.log("Name was done, about to set another timer with moves: "+ moves + " and counter: "+ counter); 
-        if( counter+1 < moves.split(',').length) //If there is at least one move left
-          {   setTimers(moves); } 
-      else { 
-        window.localStorage.removeItem("currentMoveCounter");
-        window.localStorage.removeItem("currentWorkoutName");
-
-        sendMessage("end", ""); 
-      }
+      advanceWorkout(); 
     } 
   }
 );

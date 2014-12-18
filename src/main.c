@@ -1,7 +1,7 @@
-//Custom Workout Timer for Pebble. v 2.0
+//Custom Workout Timer for Pebble. v 2.5
 //By Fernando Trujano
 //    trujano@mit.edu
-// 7/29/2014
+// 12/10/2014
 
 #include "pebble.h"
 #include<stdlib.h>
@@ -61,7 +61,6 @@ static void jsReadyTimer_callback(void *data){
 void sendMessage(char* message) { 
   
   //Block until JS is ready
-    //TODO
   if (!jsReady){ 
       jsReadyTimer = app_timer_register(1 /* milliseconds */, jsReadyTimer_callback, message);  
   }
@@ -166,7 +165,7 @@ void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *da
   } 
 }
 
-//Depecated
+//Deprecated
 //When user long clicks on a menu Item - aka deletes item
 void menu_long_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data) {
   // Use the row to specify which item will receive the select action
@@ -242,6 +241,7 @@ static void timer_callback(void *data) {
       if (timer_time==0) { 
         persist_delete(PERSIST_KEY_WAKEUP_ID);
         wakeup_cancel(s_wakeup_id); 
+        wakeup_cancel_all(); 
         app_timer_cancel(timer);
         window_stack_pop(false); 
         window_stack_push(loading_window, true); 
@@ -270,7 +270,7 @@ void pause_click_handler(ClickRecognizerRef recognizer, void *context) {
     persist_delete(PERSIST_PAUSE_KEY); 
     text_layer_set_text(paused_text, "\0"); //Empty String
     time_t future_time = time(NULL) + timer_time;
-    s_wakeup_id = wakeup_schedule(future_time, 0, true); 
+    s_wakeup_id = wakeup_schedule(future_time+1, 0, true); 
     persist_write_int(PERSIST_KEY_WAKEUP_ID, s_wakeup_id); // Save wakeup id! 
     timer = app_timer_register(1000 /* milliseconds */, timer_callback, NULL);
     paused = false; 
@@ -506,7 +506,7 @@ static void in_received_handler(DictionaryIterator *iter, void *context) {
         APP_LOG(APP_LOG_LEVEL_DEBUG,"Timer message recieved with value %s", message); 
       
         time_t future_time = time(NULL) + atoi(message);
-        s_wakeup_id = wakeup_schedule(future_time, 0, true); //Create Wakeup Timer
+        s_wakeup_id = wakeup_schedule(future_time+1, 0, true); //Create Wakeup Timer
         persist_write_int(PERSIST_KEY_WAKEUP_ID, s_wakeup_id); // Save wakeup id! 
         persist_write_string( PERSIST_KEY_WAKUP_NAME, type);  //Save workout name
         createTimer(type,message);  
@@ -522,7 +522,8 @@ static void wakeup_handler(WakeupId id, int32_t reason) {
   vibes_long_pulse(); //Vibrate Pebble 
   
   window_stack_push(loading_window, false); 
-  sendMessage("done"); //Go to next workout, if possible
+ // sendMessage("done"); //Go to next workout, if possible
+  sendMessage("resumeWorkout");
 }
 
 
@@ -636,9 +637,6 @@ if(launch_reason() == APP_LAUNCH_WAKEUP) {
       window_stack_push(window, true);
   }
     
-      
-
-
           //persist_delete(PERSIST_KEY_WAKEUP_ID);
 
   app_event_loop();
