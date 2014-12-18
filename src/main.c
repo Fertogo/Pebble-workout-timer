@@ -17,6 +17,10 @@ static TextLayer *text_layer;
 static AppTimer *timer;
 static MenuLayer *menu_layer;
 
+bool jsReady = false; 
+
+void sendMessage(char*); 
+
 
 static WakeupId s_wakeup_id;
   
@@ -39,12 +43,37 @@ char *readFromStorage(int key) {
   return "Error";  
 }
 
+static AppTimer *jsReadyTimer;
+static void jsReadyTimer_callback(void *data){ 
+    APP_LOG(APP_LOG_LEVEL_DEBUG,"Trying to send message, phone isn't ready yet!");
+
+    //Wait until JS is ready
+    if (jsReady) { 
+      sendMessage(data); 
+    }
+  else { //Wait 1/10 seconds
+    jsReadyTimer = app_timer_register(100 /* milliseconds */, jsReadyTimer_callback, data);  
+  }
+  
+}
+
+
 void sendMessage(char* message) { 
-  DictionaryIterator *iter;
- 	app_message_outbox_begin(&iter);
- 	dict_write_cstring(iter,1, message);
- 	app_message_outbox_send();
-  APP_LOG(APP_LOG_LEVEL_DEBUG,"Message \"%s\" sent to phone", message);
+  
+  //Block until JS is ready
+    //TODO
+  if (!jsReady){ 
+      jsReadyTimer = app_timer_register(1 /* milliseconds */, jsReadyTimer_callback, message);  
+  }
+
+  else {     
+    //Send Message
+    DictionaryIterator *iter;
+   	app_message_outbox_begin(&iter);
+   	dict_write_cstring(iter,1, message);
+   	app_message_outbox_send();
+    APP_LOG(APP_LOG_LEVEL_DEBUG,"Message \"%s\" sent to phone", message);
+  }
 }
 
 void clearMemory() { 
@@ -213,10 +242,12 @@ static void timer_callback(void *data) {
       if (timer_time==0) { 
         persist_delete(PERSIST_KEY_WAKEUP_ID);
         wakeup_cancel(s_wakeup_id); 
-        vibes_long_pulse(); //Vibrate Pebble 
+        app_timer_cancel(timer);
         window_stack_pop(false); 
         window_stack_push(loading_window, true); 
         sendMessage("done"); //Go to next workout, if possible
+        vibes_long_pulse(); //Vibrate Pebble 
+
         
       } 
       else { 
@@ -438,7 +469,11 @@ static void in_received_handler(DictionaryIterator *iter, void *context) {
       
     else if (strcmp(type,"end") == 0) { 
         APP_LOG(APP_LOG_LEVEL_DEBUG, "Workout Finished");
+
         window_stack_remove(loading_window, false);
+        window_stack_pop_all(false);
+        window_stack_push(window, false); 
+
         //Show end Card
         static Window *end_window; 
         static TextLayer *end_text;
@@ -463,6 +498,10 @@ static void in_received_handler(DictionaryIterator *iter, void *context) {
         vibes_double_pulse(); 
     }
   
+    else if (strcmp(type,"ready") == 0){ 
+        APP_LOG(APP_LOG_LEVEL_DEBUG,"JS READY C KNOWS "); 
+        jsReady = true; 
+    }
     else { //It is a Timer. Type = Title, message = duration
         APP_LOG(APP_LOG_LEVEL_DEBUG,"Timer message recieved with value %s", message); 
       

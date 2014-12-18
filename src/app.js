@@ -15,6 +15,7 @@ function setTimers(moves) {
   sendMessage(moveslist[counter] , moveslist[counter+1]); //SendMessage(move,time)
   
   counter+=2; //Since moves is 1D
+  window.localStorage.getItem("currentMoveCounter", counter); 
   console.log("Timer set, incrementing counter to " + counter); 
 }
 
@@ -29,6 +30,7 @@ function sendMessage(type, message){
 
 Pebble.addEventListener("ready", function(e){
     console.log("JS code running!");  
+    sendMessage("ready"); 
 });
 
 Pebble.addEventListener("showConfiguration", function(){ 
@@ -80,9 +82,30 @@ Pebble.addEventListener("appmessage",
       console.log("Deleted item from storage:"+ e.payload[1].split(',')[1]);
     }
       
+    else if (e.payload[1] == "resumeWorkout"){ 
+      currentWorkoutName = window.localStorage.getItem("currentWorkoutName");
+      moves = window.localStorage.getItem(currentWorkoutName); 
+      counter = window.localStorage.getItem("currentMoveCounter"); 
+      console.log("RESUME WORKOUT MESSAGE"); 
+      console.log(currentWorkoutName);
+      console.log(counter);     
+      
+      if (e.payload[2] == "done"){ 
+        if( counter+1 < moves.split(',').length) //If there is at least one move left
+            {   setTimers(moves); } 
+        else { 
+          window.localStorage.removeItem("currentMoveCounter");
+          window.localStorage.removeItem("currentWorkoutName");  
+          sendMessage("end", ""); 
+        }      
+      }
+    }
     else if (e.payload[1] != "done"){ //Begin Workout     
         moves = window.localStorage.getItem(e.payload[1]);
         counter = 0; //Reset counter
+        window.localStorage.setItem("currentMoveCounter", counter); 
+        window.localStorage.setItem("currentWorkoutName", e.payload[1]); 
+
         setTimers(moves);      
     }
 
@@ -90,7 +113,12 @@ Pebble.addEventListener("appmessage",
       //console.log("Name was done, about to set another timer with moves: "+ moves + " and counter: "+ counter); 
         if( counter+1 < moves.split(',').length) //If there is at least one move left
           {   setTimers(moves); } 
-      else sendMessage("end", ""); 
+      else { 
+        window.localStorage.removeItem("currentMoveCounter");
+        window.localStorage.removeItem("currentWorkoutName");
+
+        sendMessage("end", ""); 
+      }
     } 
   }
 );

@@ -9,13 +9,9 @@
     "resources": {
         "media": [
             {
-                "file": "images/Stopbtn.png",
-                "name": "STOP_BUTTON",
-                "type": "png"
-            },
-            {
-                "file": "images/PausePlay.png",
-                "name": "PLAY_PAUSE_BUTTON",
+                "file": "images/menuicon.png",
+                "menuIcon": true,
+                "name": "MENU_ICON",
                 "type": "png"
             },
             {
@@ -24,9 +20,13 @@
                 "type": "png"
             },
             {
-                "file": "images/menuicon.png",
-                "menuIcon": true,
-                "name": "MENU_ICON",
+                "file": "images/PausePlay.png",
+                "name": "PLAY_PAUSE_BUTTON",
+                "type": "png"
+            },
+            {
+                "file": "images/Stopbtn.png",
+                "name": "STOP_BUTTON",
                 "type": "png"
             }
         ]
