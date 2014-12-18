@@ -30,6 +30,11 @@ bool instructions = false;
 
 char * workout_names[20]; //Save up to 20 workouts
 
+/* Reads a string from the Pebble Internal storage
+*  @param key Key under which desired file was saved
+*  @return A string representing the contents of the file. 
+*          returns string "Error" if unable to find file.
+*/
 char *readFromStorage(int key) { 
   char * total; 
   total = "Error"; 
@@ -42,6 +47,7 @@ char *readFromStorage(int key) {
   APP_LOG(APP_LOG_LEVEL_DEBUG,"Reading from storage: Key %i not found", key);
   return "Error";  
 }
+
 
 static AppTimer *jsReadyTimer;
 static void jsReadyTimer_callback(void *data){ 
@@ -57,7 +63,10 @@ static void jsReadyTimer_callback(void *data){
   
 }
 
-
+/*
+* Sends a message to the phone. Does not send the message until phone is ready to recieve. 
+* @param message Message to send to the phone
+*/
 void sendMessage(char* message) { 
   
   //Block until JS is ready
@@ -75,6 +84,10 @@ void sendMessage(char* message) {
   }
 }
 
+/*
+* Clears all workouts from Pebble's Internal Memory. 
+* (only gets called manually)
+*/
 void clearMemory() { 
     for (int i =0; i<NUM_FIRST_MENU_ITEMS; i++ ) { 
       persist_delete(i); //Delete workout
@@ -84,6 +97,9 @@ void clearMemory() {
     persist_write_string(0,"0");
 }
 
+/*
+* Redraws the main menu
+*/
 void updateMenu(){ 
   APP_LOG(APP_LOG_LEVEL_DEBUG,"Updating Menu...");
   NUM_FIRST_MENU_ITEMS = atoi(readFromStorage(0));
@@ -92,6 +108,7 @@ void updateMenu(){
   for (int i = 0; i<NUM_FIRST_MENU_ITEMS; i++) { 
     char * temp = readFromStorage(i+1); 
     //workout_names[i] =   temp;   // This does not work because of issues with pointers. (Every element becomes the last)
+    if (workout_names[i]) free(workout_names[i]); //Avoid memory leaks
     workout_names[i]= malloc(sizeof(char)*(strlen(temp)+1)); // Save workout titles
     strcpy(workout_names[i],  temp);
   }  
@@ -298,7 +315,8 @@ void stop_click_handler(ClickRecognizerRef recognizer, void *context) {
 
 //Cancels the current timer and goes to the next workout
 void next_click_handler(ClickRecognizerRef recognizer, void *context) { 
-    APP_LOG(APP_LOG_LEVEL_DEBUG,"Next Button clicked"); 
+    APP_LOG(APP_LOG_LEVEL_DEBUG,"Next Button clicked");
+    paused = false; 
     persist_delete(PERSIST_PAUSE_KEY); 
     app_timer_cancel(timer);
     wakeup_cancel(s_wakeup_id); 
@@ -515,14 +533,12 @@ static void in_received_handler(DictionaryIterator *iter, void *context) {
 
 static void wakeup_handler(WakeupId id, int32_t reason) {
   // The app has woken!
-  APP_LOG(APP_LOG_LEVEL_DEBUG,"WAkey wakey, kate is a loser %i", (int)reason);
+  APP_LOG(APP_LOG_LEVEL_DEBUG,"Wakey, Wakey. %i", (int)reason);
   persist_delete(PERSIST_KEY_WAKEUP_ID);
-  //persist_delete(PERSIST_KEY_WAKEUP_NAME);
-  psleep(300); 
+  //psleep(300); 
   vibes_long_pulse(); //Vibrate Pebble 
   
   window_stack_push(loading_window, false); 
- // sendMessage("done"); //Go to next workout, if possible
   sendMessage("resumeWorkout");
 }
 
@@ -611,6 +627,7 @@ if(launch_reason() == APP_LAUNCH_WAKEUP) {
       snprintf(time_str, 10, "%d", time_left);
       paused = true; 
       createTimer(name, time_str); 
+      sendMessage("restoreWorkout");
     }
     
     else{ 

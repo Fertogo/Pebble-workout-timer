@@ -82,33 +82,40 @@ function advanceWorkout(){
       }
 }
 
+//Restores the state of the current workout
+function restoreWorkout(){
+      currentWorkoutName = window.localStorage.getItem("currentWorkoutName");
+      moves = window.localStorage.getItem(currentWorkoutName); 
+      counter = parseInt(window.localStorage.getItem("currentMoveCounter"));   
+}
+
+//Starts a new workout based on given name
+function startNewWorkout(workoutName){ 
+        moves = window.localStorage.getItem(workoutName);
+        counter = 0; //Reset counter
+        window.localStorage.setItem("currentMoveCounter", counter); 
+        window.localStorage.setItem("currentWorkoutName", workoutName); 
+        setTimers(moves);  
+}
+
 var moves = "";
 //Recieve message from Pebble
 Pebble.addEventListener("appmessage",
   function(e) {
     console.log("Received message: " + e.payload[1]); 
     
-    if(e.payload[1].split(',')[0]=="delete") { 
-      //Remove workout from internal storage
-      window.localStorage.removeItem(e.payload[1].split(',')[1]); 
-      console.log("Deleted item from storage:"+ e.payload[1].split(',')[1]);
-    }
-      
-    else if (e.payload[1] == "resumeWorkout"){ 
+    if (e.payload[1] == "resumeWorkout"){ 
       console.log("RESUME WORKOUT MESSAGE"); 
-      currentWorkoutName = window.localStorage.getItem("currentWorkoutName");
-      moves = window.localStorage.getItem(currentWorkoutName); 
-      counter = parseInt(window.localStorage.getItem("currentMoveCounter"));       
-      advanceWorkout();           
-      
+      restoreWorkout();       
+      advanceWorkout();                
     }
-    else if (e.payload[1] != "done"){ //Begin Workout     
-        moves = window.localStorage.getItem(e.payload[1]);
-        counter = 0; //Reset counter
-        window.localStorage.setItem("currentMoveCounter", counter); 
-        window.localStorage.setItem("currentWorkoutName", e.payload[1]); 
-
-        setTimers(moves);      
+    
+    else if (e.payload[1] == "restoreWorkout"){ 
+      restoreWorkout(); 
+    }
+    
+    else if (e.payload[1] != "done"){ //Begin Workout                
+      startNewWorkout(e.payload[1]); 
     }
 
     else { 
