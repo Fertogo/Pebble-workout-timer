@@ -119,8 +119,18 @@ Pebble.addEventListener("appmessage",
     }
 
     else { 
-      //console.log("Name was done, about to set another timer with moves: "+ moves + " and counter: "+ counter); 
+      //console.log("Name was done, ab+out to set another timer with moves: "+ moves + " and counter: "+ counter); 
       advanceWorkout(); 
     } 
   }
 );
+
+/*
+* Message Protocol:
+*   Pebble sends the following messages to the phone:
+*      "resumeWorkout" - Tells the phone to restore the state of the workout and go to the next move
+*      "restoreWorkout" - Tells the phone to restore the sate of the workout (current workout, current move)
+*      "done" - Tells the phone that the current move is done, and it should advance to the next move
+*      workout-name - Tells the phone the name of a specific workout to start. 
+*  In all of these cases (except "restoreWorkout"), Pebble expects a reply from the phone with either a move and time, or "end" 
+*/

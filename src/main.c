@@ -275,8 +275,8 @@ static void timer_callback(void *data) {
         window_stack_pop(false); 
         window_stack_push(loading_window, true); 
         sendMessage("done"); //Go to next workout, if possible
-        vibes_long_pulse(); //Vibrate Pebble 
-        
+        //vibes_long_pulse(); //Vibrate Pebble 
+        vibes_short_pulse();
       } 
       else { 
         timer_time--;    
@@ -403,7 +403,8 @@ void createTimer(char* name, char* time) {
           text_layer_set_text(paused_text, "Paused");
     }
     else { 
-      timer = app_timer_register(1 /* milliseconds */, timer_callback, NULL);  } 
+      timer = app_timer_register(1 /* milliseconds */, timer_callback, NULL);  
+    } 
  
 }
 
@@ -529,7 +530,8 @@ static void in_received_handler(DictionaryIterator *iter, void *context) {
         time_t future_time = time(NULL) + atoi(message);
         s_wakeup_id = wakeup_schedule(future_time+1, 0, true); //Create Wakeup Timer
         persist_write_int(PERSIST_KEY_WAKEUP_ID, s_wakeup_id); // Save wakeup id! 
-        persist_write_string( PERSIST_KEY_WAKUP_NAME, type);  //Save workout name
+        persist_write_string( PERSIST_KEY_WAKEUP_NAME, type);  //Save workout name
+        vibes_long_pulse();
         createTimer(type,message);  
     } 
  }
@@ -695,3 +697,14 @@ void showEndCard(){
         text_layer_set_text_alignment(end2_text, GTextAlignmentCenter);
         layer_add_child(end_window_layer, text_layer_get_layer(end2_text));
 }
+
+
+/*
+* Message Protocol:
+*   The phone sends the following messages to the Pebble
+*      ("workouts" , str(move1,move2,move3...)  - Gives the Pebble the list of workout names that it should store
+*      (str(move), str(time)) - Tells the Pebble the move name and duration for the next move
+*      "end" - Tells the Pebble that there are no more moves in the workout. 
+*      "ready" - Tells the Pebble that the phone is ready to receive messages. 
+*  The phone does not expect an imediate reply in any of these cases. It does expect a "done" message from Pebble after sending a (move, time) message. 
+*/
