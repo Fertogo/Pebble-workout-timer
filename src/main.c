@@ -9,7 +9,7 @@
   
 #define WAKEUP_REASON 0
 #define PERSIST_KEY_WAKEUP_ID 337
-#define PERSIST_KEY_WAKUP_NAME 338
+#define PERSIST_KEY_WAKEUP_NAME 338
 #define PERSIST_PAUSE_KEY 339
   
 static Window *window;
@@ -20,7 +20,10 @@ static MenuLayer *menu_layer;
 bool jsReady = false; 
 
 void sendMessage(char*); 
+void showInstructions();
+void showEndCard(); 
 
+static Window *ins_window; //Instructions Window
 
 static WakeupId s_wakeup_id;
   
@@ -39,7 +42,7 @@ char *readFromStorage(int key) {
   char * total; 
   total = "Error"; 
   if (persist_exists(key)){ 
-    persist_read_string(key, total, 254); //Max Size  //Optimize
+    persist_read_string(key, total, persist_get_size(key));
     char * s = total;  
     APP_LOG(APP_LOG_LEVEL_DEBUG,"Read From Storage: Key: %i , Value: %s", key,s);
     return s; 
@@ -48,7 +51,11 @@ char *readFromStorage(int key) {
   return "Error";  
 }
 
-
+/*
+* Keeps waiting to send a message until JS on the phone is ready
+* @param data Message to be send once phone is ready
+*
+*/
 static AppTimer *jsReadyTimer;
 static void jsReadyTimer_callback(void *data){ 
     APP_LOG(APP_LOG_LEVEL_DEBUG,"Trying to send message, phone isn't ready yet!");
@@ -98,7 +105,7 @@ void clearMemory() {
 }
 
 /*
-* Redraws the main menu
+* Redraws the main menu and send a short pulse vibe
 */
 void updateMenu(){ 
   APP_LOG(APP_LOG_LEVEL_DEBUG,"Updating Menu...");
@@ -253,6 +260,11 @@ static void time_window_disappear(Window *window){
  // persist_write_string(0, "0"); // Set workouts to 0
 
 }
+/*
+* Keeps track of the main workout timer
+* Called every one second when a timer is running
+*
+*/
 //Called every one second
 static void timer_callback(void *data) {
       if (timer_time==0) { 
@@ -264,7 +276,6 @@ static void timer_callback(void *data) {
         window_stack_push(loading_window, true); 
         sendMessage("done"); //Go to next workout, if possible
         vibes_long_pulse(); //Vibrate Pebble 
-
         
       } 
       else { 
@@ -339,7 +350,12 @@ static GBitmap *stopButton;
 static GBitmap *playPauseButton;
 static GBitmap *nextButton;
 
-void createTimer(char* name, char* time) {  //Creates Timer window
+/*
+* Creates the main timer Window and starts the timer
+* @param name Name of the move to be displayed
+* @param char* representing the number of seconds for that move
+*/
+void createTimer(char* name, char* time) { 
     APP_LOG(APP_LOG_LEVEL_DEBUG,"Creating Timer with name: %s and time: %s",name, time); 
     
   window_stack_remove(loading_window, false); 
@@ -402,8 +418,12 @@ enum {
       AKEY_TEXT,
    };
 
-void addWorkout(char* title){ 
 
+/*
+* Adds a single workout to the Pebble. 
+* @param name of the workout
+*/
+void addWorkout(char* title){ 
 
         APP_LOG(APP_LOG_LEVEL_DEBUG, "adding workout!");
       
@@ -481,8 +501,9 @@ static void in_received_handler(DictionaryIterator *iter, void *context) {
           addWorkout(workouttitle); 
           workouttitle = strtok (NULL, ",");
         }  
-
+      
       updateMenu(); 
+      window_stack_remove(ins_window, false); 
     }
       
     else if (strcmp(type,"end") == 0) { 
@@ -493,25 +514,7 @@ static void in_received_handler(DictionaryIterator *iter, void *context) {
         window_stack_push(window, false); 
 
         //Show end Card
-        static Window *end_window; 
-        static TextLayer *end_text;
-        static TextLayer *end2_text;
-        end_window = window_create(); 
-        window_stack_push(end_window, true);
-        Layer *end_window_layer = window_get_root_layer(end_window);
-        GRect bounds = layer_get_frame(end_window_layer);
-    
-        end_text = text_layer_create(GRect(0, 10, bounds.size.w /* width */, 28 /* height */));
-        text_layer_set_text(end_text, "Congratulations!");
-        text_layer_set_font(end_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
-        text_layer_set_text_alignment(end_text, GTextAlignmentCenter);
-        layer_add_child(end_window_layer, text_layer_get_layer(end_text));
-      
-        end2_text = text_layer_create(GRect(0, 60, bounds.size.w /* width */, 30 /* height */));
-        text_layer_set_text(end2_text, "Workout Finished");
-        text_layer_set_font(end2_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
-        text_layer_set_text_alignment(end2_text, GTextAlignmentCenter);
-        layer_add_child(end_window_layer, text_layer_get_layer(end2_text));
+        showEndCard(); 
       
         vibes_double_pulse(); 
     }
@@ -542,8 +545,6 @@ static void wakeup_handler(WakeupId id, int32_t reason) {
   sendMessage("resumeWorkout");
 }
 
-
-
 int main(void) {
   
   APP_LOG(APP_LOG_LEVEL_DEBUG,"C Code Started");
@@ -569,7 +570,17 @@ int main(void) {
   }  
 
   
-   
+        window = window_create(); 
+      window_set_window_handlers(window, (WindowHandlers) {
+        .load = window_load,
+        .unload = window_unload,
+      });
+  
+      loading_window = window_create(); 
+      window_set_window_handlers(loading_window, (WindowHandlers) {
+        .load = loading_window_load,
+        .unload = loading_window_unload,
+      }); 
   /* //Print Memory for debugging 
   APP_LOG(APP_LOG_LEVEL_DEBUG,"Printing Memory");   
   int i = 0; 
@@ -580,35 +591,13 @@ int main(void) {
   */
     //checkScheduledWakeup();
   if (totalworkouts == 0) { 
-        //Show Instructions
-        static Window *ins_window; 
-        static TextLayer *ins_text;
-        ins_window = window_create(); 
-        window_stack_push(ins_window, true);
-        Layer *ins_window_layer = window_get_root_layer(ins_window);
-        GRect bounds = layer_get_frame(ins_window_layer); 
-        ins_text = text_layer_create(GRect(0, 0, bounds.size.w /* width */, 150 /* height */));
-        text_layer_set_overflow_mode(ins_text, GTextOverflowModeWordWrap ); 
-        text_layer_set_text(ins_text, "Use your phone to add workouts. On the pebble app, find this timer app and click osettings icon. ");
-        text_layer_set_font(ins_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
-        text_layer_set_text_alignment(ins_text, GTextAlignmentLeft);
-        layer_add_child(ins_window_layer, text_layer_get_layer(ins_text)); 
+        showInstructions(); 
         instructions = true; 
   }
-      window = window_create(); 
-      window_set_window_handlers(window, (WindowHandlers) {
-        .load = window_load,
-        .unload = window_unload,
-      });
-  
-      loading_window = window_create(); 
-      window_set_window_handlers(loading_window, (WindowHandlers) {
-        .load = loading_window_load,
-        .unload = loading_window_unload,
-      });
+
   
         // Was this a wakeup?
-if(launch_reason() == APP_LAUNCH_WAKEUP) {
+else if(launch_reason() == APP_LAUNCH_WAKEUP) {
     // The app was started by a wakeup
     WakeupId id = 0;
     int32_t reason = 0;
@@ -619,8 +608,8 @@ if(launch_reason() == APP_LAUNCH_WAKEUP) {
   }
   
   
-  else if (persist_exists(PERSIST_KEY_WAKEUP_ID) && persist_read_int(PERSIST_KEY_WAKEUP_ID) > 0 ){ 
-    char* name = readFromStorage(PERSIST_KEY_WAKUP_NAME); 
+else if (persist_exists(PERSIST_KEY_WAKEUP_ID) && persist_read_int(PERSIST_KEY_WAKEUP_ID) > 0 ){ 
+    char* name = readFromStorage(PERSIST_KEY_WAKEUP_NAME); 
 
     if (persist_exists(PERSIST_PAUSE_KEY)){ 
       int time_left =persist_read_int(PERSIST_PAUSE_KEY); 
@@ -646,11 +635,10 @@ if(launch_reason() == APP_LAUNCH_WAKEUP) {
       else{ //Temporary solution
         window_stack_push(window, true);
       }
-
     }
   }
   
-  else{
+  else {
       window_stack_push(window, true);
   }
     
@@ -661,4 +649,49 @@ if(launch_reason() == APP_LAUNCH_WAKEUP) {
   window_destroy(window);
   APP_LOG(APP_LOG_LEVEL_DEBUG,"Exiting..."); 
 
+}
+
+/*
+* Shows the instructions window to the user. 
+*/
+void showInstructions(){
+        //Show Instructions
+        
+        static TextLayer *ins_text;
+        ins_window = window_create(); 
+        window_stack_push(ins_window, true);
+        Layer *ins_window_layer = window_get_root_layer(ins_window);
+        GRect bounds = layer_get_frame(ins_window_layer); 
+        ins_text = text_layer_create(GRect(0, 0, bounds.size.w /* width */, 150 /* height */));
+        text_layer_set_overflow_mode(ins_text, GTextOverflowModeWordWrap ); 
+        text_layer_set_text(ins_text, "Use your phone to add workouts. On the pebble app, find this timer app and click osettings icon. ");
+        text_layer_set_font(ins_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+        text_layer_set_text_alignment(ins_text, GTextAlignmentLeft);
+        layer_add_child(ins_window_layer, text_layer_get_layer(ins_text)); 
+}
+
+/*
+* Shows the end workout window to the user
+*/
+void showEndCard(){
+          //Show end Card
+        static Window *end_window; 
+        static TextLayer *end_text;
+        static TextLayer *end2_text;
+        end_window = window_create(); 
+        window_stack_push(end_window, true);
+        Layer *end_window_layer = window_get_root_layer(end_window);
+        GRect bounds = layer_get_frame(end_window_layer);
+    
+        end_text = text_layer_create(GRect(0, 10, bounds.size.w /* width */, 28 /* height */));
+        text_layer_set_text(end_text, "Congratulations!");
+        text_layer_set_font(end_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+        text_layer_set_text_alignment(end_text, GTextAlignmentCenter);
+        layer_add_child(end_window_layer, text_layer_get_layer(end_text));
+      
+        end2_text = text_layer_create(GRect(0, 60, bounds.size.w /* width */, 30 /* height */));
+        text_layer_set_text(end2_text, "Workout Finished");
+        text_layer_set_font(end2_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+        text_layer_set_text_alignment(end2_text, GTextAlignmentCenter);
+        layer_add_child(end_window_layer, text_layer_get_layer(end2_text));
 }
