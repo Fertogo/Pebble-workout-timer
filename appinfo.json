@@ -1,5 +1,10 @@
 {
-    "appKeys": {},
+    "appKeys": {
+        "DONE": 0,
+        "RESTORE": 3,
+        "RESUME": 2,
+        "WORKOUT": 1
+    },
     "capabilities": [
         "configurable"
     ],

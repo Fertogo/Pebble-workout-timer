@@ -11,6 +11,12 @@
 #define PERSIST_KEY_WAKEUP_ID 337
 #define PERSIST_KEY_WAKEUP_NAME 338
 #define PERSIST_PAUSE_KEY 339
+
+//Message Types
+#define DONE_KEY 0
+#define WORKOUT_KEY 1
+#define RESUME_KEY 2
+#define RESTORE_KEY 3
   
 static Window *window;
 static TextLayer *text_layer;
@@ -19,7 +25,7 @@ static MenuLayer *menu_layer;
 
 bool jsReady = false; 
 
-void sendMessage(char*); 
+void sendMessage(int , char*); 
 void showInstructions();
 void showEndCard(); 
 
@@ -53,16 +59,21 @@ char *readFromStorage(int key) {
 
 /*
 * Keeps waiting to send a message until JS on the phone is ready
-* @param data Message to be send once phone is ready
+* @param data Data to be send once phone is ready in format (type,message)
 *
 */
+
 static AppTimer *jsReadyTimer;
 static void jsReadyTimer_callback(void *data){ 
     APP_LOG(APP_LOG_LEVEL_DEBUG,"Trying to send message, phone isn't ready yet!");
 
     //Wait until JS is ready
-    if (jsReady) { 
-      sendMessage(data); 
+    if (jsReady) {      
+      int type; 
+      char * message;         
+      type =  atoi(strtok(data, ","));
+      message = strtok(NULL, ",");
+      sendMessage(type,message);       
     }
   else { //Wait 1/10 seconds
     jsReadyTimer = app_timer_register(100 /* milliseconds */, jsReadyTimer_callback, data);  
@@ -71,24 +82,30 @@ static void jsReadyTimer_callback(void *data){
 }
 
 /*
-* Sends a message to the phone. Does not send the message until phone is ready to recieve. 
+* Sends a message to the phone. Does not send the message until phone is ready to recieve.
+* @param type Type of message being sent
 * @param message Message to send to the phone
 */
-void sendMessage(char* message) { 
+void sendMessage(int type, char* message) { 
   
-  //Block until JS is ready
+  //Block until JS is ready 
   if (!jsReady){ 
-      jsReadyTimer = app_timer_register(1 /* milliseconds */, jsReadyTimer_callback, message);  
+      char data[80]; 
+      char strType[2]; 
+      snprintf(strType,10, "%d", type); 
+      strcpy(data, strType); 
+      strcpy(data, ","); 
+      strcpy(data, message);  
+      jsReadyTimer = app_timer_register(1 /* milliseconds */ , jsReadyTimer_callback, data);  
   }
-
-  else {     
-    //Send Message
+  
+ else {     
     DictionaryIterator *iter;
    	app_message_outbox_begin(&iter);
-   	dict_write_cstring(iter,1, message);
+   	dict_write_cstring(iter, type, message);
    	app_message_outbox_send();
     APP_LOG(APP_LOG_LEVEL_DEBUG,"Message \"%s\" sent to phone", message);
-  }
+ }
 }
 
 /*
@@ -178,7 +195,7 @@ void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *da
           if (cell_index->row == i ){ 
             APP_LOG(APP_LOG_LEVEL_DEBUG, "Button Clicked: %i", i);
             char *workout = readFromStorage(i+1);//Get Workout Title
-            sendMessage(workout); 
+            sendMessage(WORKOUT_KEY , workout); 
             
             //clearMemory(); 
             window_stack_push(loading_window, true); 
@@ -274,7 +291,7 @@ static void timer_callback(void *data) {
         app_timer_cancel(timer);
         window_stack_pop(false); 
         window_stack_push(loading_window, true); 
-        sendMessage("done"); //Go to next workout, if possible
+        sendMessage(DONE_KEY, ""); //Go to next workout, if possible
         //vibes_long_pulse(); //Vibrate Pebble 
         vibes_short_pulse();
       } 
@@ -333,7 +350,7 @@ void next_click_handler(ClickRecognizerRef recognizer, void *context) {
     wakeup_cancel(s_wakeup_id); 
     window_stack_pop(true); 
     window_stack_push(loading_window, true); 
-    sendMessage("done"); 
+    sendMessage(DONE_KEY , ""); 
 }
 
 void timerwindow_click_config_provider(void *context){ 
@@ -414,12 +431,6 @@ void window_unload(Window *window) {
   menu_layer_destroy(menu_layer); 
 } 
 
-enum {
-      AKEY_NUMBER,
-      AKEY_TEXT,
-   };
-
-
 /*
 * Adds a single workout to the Pebble. 
 * @param name of the workout
@@ -467,12 +478,18 @@ s=NULL;else
 s[-1]=0;last=s;return(tok);}}while(sc!=0);}}
 
 
+enum {
+      TYPE_KEY,
+      MESSAGE_KEY,
+      MESSAGE2_KEY,
+   };
+
 //Recieve message from js
 static void in_received_handler(DictionaryIterator *iter, void *context) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "WatchApp Recieved Message!"); 
   
     // Check for type of message
-    Tuple *text_tuple2 = dict_find(iter, AKEY_NUMBER);
+    Tuple *text_tuple2 = dict_find(iter, TYPE_KEY);
     char *type; 
     type = "Error";
     if (text_tuple2) {  
@@ -480,7 +497,7 @@ static void in_received_handler(DictionaryIterator *iter, void *context) {
       APP_LOG(APP_LOG_LEVEL_DEBUG, "Type: %s", type );
      }
     // Check for fields you expect to receive
-    Tuple *text_tuple = dict_find(iter, AKEY_TEXT);
+    Tuple *text_tuple = dict_find(iter, MESSAGE_KEY);
     // Act on the found fields received
     char *message; 
     message = "Error";
@@ -489,6 +506,15 @@ static void in_received_handler(DictionaryIterator *iter, void *context) {
       APP_LOG(APP_LOG_LEVEL_DEBUG, "Text: %s", message );
      }
    
+    Tuple *text_tuple3 = dict_find(iter, MESSAGE2_KEY);
+    // Act on the found fields received
+    char *message2; 
+    message2 = "Error";
+    if (text_tuple3) {  
+      message2 = text_tuple3->value->cstring;
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Message 2 Text: %s", message2 );
+     }
+  
     if (strcmp(type,"workouts") == 0) { 
         clearMemory(); 
     
@@ -524,15 +550,16 @@ static void in_received_handler(DictionaryIterator *iter, void *context) {
         APP_LOG(APP_LOG_LEVEL_DEBUG,"JS READY C KNOWS "); 
         jsReady = true; 
     }
-    else { //It is a Timer. Type = Title, message = duration
+  
+    else if (strcmp(type, "move") == 0){ //It is a Timer. Type = Title, message = duration
         APP_LOG(APP_LOG_LEVEL_DEBUG,"Timer message recieved with value %s", message); 
       
-        time_t future_time = time(NULL) + atoi(message);
+        time_t future_time = time(NULL) + atoi(message2);
         s_wakeup_id = wakeup_schedule(future_time+1, 0, true); //Create Wakeup Timer
         persist_write_int(PERSIST_KEY_WAKEUP_ID, s_wakeup_id); // Save wakeup id! 
         persist_write_string( PERSIST_KEY_WAKEUP_NAME, type);  //Save workout name
         vibes_long_pulse();
-        createTimer(type,message);  
+        createTimer(message,message2);  
     } 
  }
 
@@ -544,7 +571,7 @@ static void wakeup_handler(WakeupId id, int32_t reason) {
   vibes_long_pulse(); //Vibrate Pebble 
   
   window_stack_push(loading_window, false); 
-  sendMessage("resumeWorkout");
+  sendMessage(RESUME_KEY, "");
 }
 
 int main(void) {
@@ -618,7 +645,7 @@ else if (persist_exists(PERSIST_KEY_WAKEUP_ID) && persist_read_int(PERSIST_KEY_W
       snprintf(time_str, 10, "%d", time_left);
       paused = true; 
       createTimer(name, time_str); 
-      sendMessage("restoreWorkout");
+      sendMessage(RESTORE_KEY , "");
     }
     
     else{ 
@@ -702,9 +729,9 @@ void showEndCard(){
 /*
 * Message Protocol:
 *   The phone sends the following messages to the Pebble
-*      ("workouts" , str(move1,move2,move3...)  - Gives the Pebble the list of workout names that it should store
-*      (str(move), str(time)) - Tells the Pebble the move name and duration for the next move
-*      "end" - Tells the Pebble that there are no more moves in the workout. 
-*      "ready" - Tells the Pebble that the phone is ready to receive messages. 
+*      Type: "workouts" Data: str(move1,move2,move3...)  - Gives the Pebble the list of workout names that it should store
+*      Type: "move" Data:(move, str(time)) - Tells the Pebble the move name and duration for the next move
+*      Type: "end" - Tells the Pebble that there are no more moves in the workout. 
+*      Type: "ready" - Tells the Pebble that the phone is ready to receive messages. 
 *  The phone does not expect an imediate reply in any of these cases. It does expect a "done" message from Pebble after sending a (move, time) message. 
 */

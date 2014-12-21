@@ -11,17 +11,17 @@ function setTimers(moves) {
   //moves is supposed to be a 2D Array, but for some reason it is a string. Here is my fix. 
   var moveslist = moves.split(','); //Now this is a 1D Array
   console.log("On set timers. Move: " + moveslist[counter] + " Time: " +moveslist[counter+1] ); 
-  sendMessage(moveslist[counter] , moveslist[counter+1]); //SendMessage(move,time)
+  sendMessage("move" ,moveslist[counter] , moveslist[counter+1]); //SendMessage("move",move,time)
   
   counter+=2; //Since moves is 1D
   window.localStorage.setItem("currentMoveCounter", counter); 
   console.log("Timer set, incrementing counter to " + counter); 
 }
 
-function sendMessage(type, message){ 
+function sendMessage(type, message1, message2){ 
   //Send Message to Pebble 
-    console.log("sending  message to watchapp " + type +" : "+ message); 
-      Pebble.sendAppMessage( { "0": type, "1": message  },
+      console.log("sending  message to watchapp " + type +" : "+ message1 + " : " + message2); 
+      Pebble.sendAppMessage( { "0": type, "1": message1, "2": message2 },
         function(e) { console.log("Successfully delivered message");  },
         function(e) { console.log("Unable to deliver message " + " Error is: " + e.error.message); }                        
       );
@@ -33,7 +33,7 @@ Pebble.addEventListener("ready", function(e){
 });
 
 Pebble.addEventListener("showConfiguration", function(){ 
-  console.log("Showing Configuration v2.0");
+  console.log("Showing Configuration v" + version);
   console.log(version); 
   Pebble.openURL("http://fernandotrujano.com/pebble/index.html?info="+Pebble.getAccountToken()+','+version); 
 });
@@ -78,7 +78,7 @@ function advanceWorkout(){
         window.localStorage.removeItem("currentMoveCounter");
         window.localStorage.removeItem("currentWorkoutName");
 
-        sendMessage("end", ""); 
+        sendMessage("end"); 
       }
 }
 
@@ -102,23 +102,31 @@ var moves = "";
 //Recieve message from Pebble
 Pebble.addEventListener("appmessage",
   function(e) {
-    console.log("Received message: " + e.payload[1]); 
+    for (var type in e.payload){
+          console.log("Received message: " + e.payload[type] + " of type: " + type);       
+    }
     
-    if (e.payload[1] == "resumeWorkout"){ 
+    //if (e.payload[1] == "resumeWorkout"){ 
+    if ("RESUME" in e.payload){
       console.log("RESUME WORKOUT MESSAGE"); 
       restoreWorkout();       
       advanceWorkout();                
     }
     
-    else if (e.payload[1] == "restoreWorkout"){ 
+    //else if (e.payload[1] == "restoreWorkout"){ 
+    else if ("RESTORE" in e.payload){
       restoreWorkout(); 
     }
     
-    else if (e.payload[1] != "done"){ //Begin Workout                
-      startNewWorkout(e.payload[1]); 
+    //else if (e.payload[1] != "done"){ //Begin Workout  
+      else if ("WORKOUT" in e.payload){
+        console.log("RECEIVED WORKOUT MESSAGE:"); 
+        startNewWorkout(e.payload["WORKOUT"]); 
     }
 
-    else { 
+    //else  { 
+    else if ("DONE" in e.payload){
+
       //console.log("Name was done, ab+out to set another timer with moves: "+ moves + " and counter: "+ counter); 
       advanceWorkout(); 
     } 
@@ -128,9 +136,9 @@ Pebble.addEventListener("appmessage",
 /*
 * Message Protocol:
 *   Pebble sends the following messages to the phone:
-*      "resumeWorkout" - Tells the phone to restore the state of the workout and go to the next move
-*      "restoreWorkout" - Tells the phone to restore the sate of the workout (current workout, current move)
-*      "done" - Tells the phone that the current move is done, and it should advance to the next move
-*      workout-name - Tells the phone the name of a specific workout to start. 
+*      Type: RESUME - Tells the phone to restore the state of the workout and go to the next move
+*      Type: RESTORE - Tells the phone to restore the sate of the workout (current workout, current move)
+*      Type: DONE" - Tells the phone that the current move is done, and it should advance to the next move
+*      Type: WORKOUT Data: workout-name - Tells the phone the name of a specific workout to start. 
 *  In all of these cases (except "restoreWorkout"), Pebble expects a reply from the phone with either a move and time, or "end" 
 */
