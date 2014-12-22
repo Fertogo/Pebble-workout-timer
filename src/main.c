@@ -24,6 +24,7 @@ static AppTimer *timer;
 static MenuLayer *menu_layer;
 
 bool jsReady = false; 
+bool needRestore = false; //Whether the phone needs to restore the workout before advancing
 
 void sendMessage(int , char*); 
 void showInstructions();
@@ -59,8 +60,7 @@ char *readFromStorage(int key) {
 
 /*
 * Keeps waiting to send a message until JS on the phone is ready
-* @param data Data to be send once phone is ready in format (type,message)
-*
+* @param data Data to be send once phone is ready in format ("type,message")
 */
 
 static AppTimer *jsReadyTimer;
@@ -68,12 +68,12 @@ static void jsReadyTimer_callback(void *data){
     APP_LOG(APP_LOG_LEVEL_DEBUG,"Trying to send message, phone isn't ready yet!");
 
     //Wait until JS is ready
-    if (jsReady) {      
+    if (jsReady) { 
       int type; 
-      char * message;         
-      type =  atoi(strtok(data, ","));
-      message = strtok(NULL, ",");
-      sendMessage(type,message);       
+      char * message;
+      type = atoi(data);
+      message = strchr(data, ',') + sizeof(char);
+      sendMessage(type,message);  
     }
   else { //Wait 1/10 seconds
     jsReadyTimer = app_timer_register(100 /* milliseconds */, jsReadyTimer_callback, data);  
@@ -86,20 +86,23 @@ static void jsReadyTimer_callback(void *data){
 * @param type Type of message being sent
 * @param message Message to send to the phone
 */
+char data[80];
 void sendMessage(int type, char* message) { 
-  
+
   //Block until JS is ready 
-  if (!jsReady){ 
-      char data[80]; 
-      char strType[2]; 
-      snprintf(strType,10, "%d", type); 
-      strcpy(data, strType); 
-      strcpy(data, ","); 
-      strcpy(data, message);  
-      jsReadyTimer = app_timer_register(1 /* milliseconds */ , jsReadyTimer_callback, data);  
+  if (!jsReady){
+    char strType[2]; 
+    snprintf(strType,10, "%d", type); 
+    strcpy(data, strType);
+    strcat(data, ","); 
+    strcat(data, message);  //Put data in "type,message" format
+    
+    jsReadyTimer = app_timer_register(1 /* milliseconds */ , jsReadyTimer_callback, data);  
   }
   
- else {     
+ else {  
+    APP_LOG(APP_LOG_LEVEL_DEBUG,"Sending message... %s %i", message, type);
+
     DictionaryIterator *iter;
    	app_message_outbox_begin(&iter);
    	dict_write_cstring(iter, type, message);
@@ -282,7 +285,6 @@ static void time_window_disappear(Window *window){
 * Called every one second when a timer is running
 *
 */
-//Called every one second
 static void timer_callback(void *data) {
       if (timer_time==0) { 
         persist_delete(PERSIST_KEY_WAKEUP_ID);
@@ -291,7 +293,11 @@ static void timer_callback(void *data) {
         app_timer_cancel(timer);
         window_stack_pop(false); 
         window_stack_push(loading_window, true); 
-        sendMessage(DONE_KEY, ""); //Go to next workout, if possible
+        if (needRestore) { 
+          sendMessage(RESUME_KEY, "void");
+          needRestore = false; 
+        } 
+        else sendMessage(DONE_KEY, ""); //Go to next workout, if possible
         //vibes_long_pulse(); //Vibrate Pebble 
         vibes_short_pulse();
       } 
@@ -350,7 +356,11 @@ void next_click_handler(ClickRecognizerRef recognizer, void *context) {
     wakeup_cancel(s_wakeup_id); 
     window_stack_pop(true); 
     window_stack_push(loading_window, true); 
-    sendMessage(DONE_KEY , ""); 
+    if (needRestore){ 
+      sendMessage(RESUME_KEY, "void");
+      needRestore = false; 
+    } 
+    else sendMessage(DONE_KEY , "void"); 
 }
 
 void timerwindow_click_config_provider(void *context){ 
@@ -551,15 +561,17 @@ static void in_received_handler(DictionaryIterator *iter, void *context) {
         jsReady = true; 
     }
   
-    else if (strcmp(type, "move") == 0){ //It is a Timer. Type = Title, message = duration
+    else if (strcmp(type, "move") == 0){ //It is a Timer. Type = "move", message = movename, message2 = duration
         APP_LOG(APP_LOG_LEVEL_DEBUG,"Timer message recieved with value %s", message); 
       
-        time_t future_time = time(NULL) + atoi(message2);
+        char * moveName = message; 
+        char * moveDuration = message2; 
+        time_t future_time = time(NULL) + atoi(moveDuration);
         s_wakeup_id = wakeup_schedule(future_time+1, 0, true); //Create Wakeup Timer
         persist_write_int(PERSIST_KEY_WAKEUP_ID, s_wakeup_id); // Save wakeup id! 
-        persist_write_string( PERSIST_KEY_WAKEUP_NAME, type);  //Save workout name
+        persist_write_string( PERSIST_KEY_WAKEUP_NAME, moveName);  //Save move name
         vibes_long_pulse();
-        createTimer(message,message2);  
+        createTimer(moveName,moveDuration);  
     } 
  }
 
@@ -571,7 +583,8 @@ static void wakeup_handler(WakeupId id, int32_t reason) {
   vibes_long_pulse(); //Vibrate Pebble 
   
   window_stack_push(loading_window, false); 
-  sendMessage(RESUME_KEY, "");
+  sendMessage(RESUME_KEY, "void");
+   
 }
 
 int main(void) {
@@ -638,6 +651,7 @@ else if(launch_reason() == APP_LAUNCH_WAKEUP) {
   
   
 else if (persist_exists(PERSIST_KEY_WAKEUP_ID) && persist_read_int(PERSIST_KEY_WAKEUP_ID) > 0 ){ 
+    needRestore = true;
     char* name = readFromStorage(PERSIST_KEY_WAKEUP_NAME); 
 
     if (persist_exists(PERSIST_PAUSE_KEY)){ 
@@ -645,7 +659,8 @@ else if (persist_exists(PERSIST_KEY_WAKEUP_ID) && persist_read_int(PERSIST_KEY_W
       snprintf(time_str, 10, "%d", time_left);
       paused = true; 
       createTimer(name, time_str); 
-      sendMessage(RESTORE_KEY , "");
+      //sendMessage(RESTORE_KEY , "void");
+      
     }
     
     else{ 
@@ -683,9 +698,7 @@ else if (persist_exists(PERSIST_KEY_WAKEUP_ID) && persist_read_int(PERSIST_KEY_W
 /*
 * Shows the instructions window to the user. 
 */
-void showInstructions(){
-        //Show Instructions
-        
+void showInstructions(){    
         static TextLayer *ins_text;
         ins_window = window_create(); 
         window_stack_push(ins_window, true);
@@ -703,7 +716,6 @@ void showInstructions(){
 * Shows the end workout window to the user
 */
 void showEndCard(){
-          //Show end Card
         static Window *end_window; 
         static TextLayer *end_text;
         static TextLayer *end2_text;
