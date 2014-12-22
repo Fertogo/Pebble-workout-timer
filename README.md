@@ -10,6 +10,16 @@ After installing, locate this app on the phone's Pebble app, then click on the s
 
 
 ###Changelog
+* **v2.5**
+  * Background timers
+     * Timers continue to run even if the app is closed
+  * New controls during timer. 
+     * Stop, play/pause and next
+  * Improved UI
+     * Added ActionBar for new controls
+     * Added loading window
+  * Performance Improvements
+  * Bug Fixes
 * **v2.0**
   * Online Workout Manager
     * Delete existing workouts/moves
