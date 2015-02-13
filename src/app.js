@@ -2,7 +2,7 @@
 //By Fernando Trujano
 //    trujano@mit.edu
 // 12/10/2014
-var version = "2.5";
+var version = "2.6";
 //Sends workouts to watch app using Pebble.sendAppMesssage
 
 var counter = 0; 
@@ -83,10 +83,12 @@ function advanceWorkout(){
 }
 
 //Restores the state of the current workout
-function restoreWorkout(){
+// @param goBack 
+function restoreWorkout(goBack){
       currentWorkoutName = window.localStorage.getItem("currentWorkoutName");
       moves = window.localStorage.getItem(currentWorkoutName); 
       counter = parseInt(window.localStorage.getItem("currentMoveCounter"));   
+      if (goBack) counter -= 2; //go back a move since we are preloading moves 
 }
 
 //Starts a new workout based on given name
@@ -109,7 +111,10 @@ Pebble.addEventListener("appmessage",
     //if (e.payload[1] == "resumeWorkout"){ 
     if ("RESUME" in e.payload){
       console.log("RESUME WORKOUT MESSAGE"); 
-      restoreWorkout();       
+      console.log();
+      
+      e.payload["RESUME"] === "true" ? goBack = true : goBack = false; 
+      restoreWorkout(goBack);       
       advanceWorkout();                
     }
     
