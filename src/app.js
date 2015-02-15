@@ -1,7 +1,7 @@
 //Pebble JS Component of timer. 
 //By Fernando Trujano
 //    trujano@mit.edu
-// 12/10/2014
+// 02/15/2015
 var version = "2.6";
 //Sends workouts to watch app using Pebble.sendAppMesssage
 

@@ -1,7 +1,7 @@
-//Custom Workout Timer for Pebble. v 2.5
+//Custom Workout Timer for Pebble. v 2.6
 //By Fernando Trujano
 //    trujano@mit.edu
-// 12/10/2014
+// 02/15/2015
 
 #include "pebble.h"
 #include<stdlib.h>
@@ -41,6 +41,8 @@ void createTimer();
 void finishWorkout(); 
 void advanceToMove(); 
 void advanceToNextMove(); 
+
+char* strtok(); 
 
 static Window *ins_window; //Instructions Window
 
@@ -288,55 +290,32 @@ static TextLayer *paused_text;
 char * time_str = "";
 
 static void time_window_disappear(Window *window){ 
-  // Cancel the timer
   APP_LOG(APP_LOG_LEVEL_DEBUG,"Timer Window Disappeared"); 
-  app_timer_cancel(timer); 
-  //Save Wakeup Id
- // persist_write_string(0, "0"); // Set workouts to 0
-
 }
+
 /*
 * Keeps track of the main workout timer
 * Called every one second when a timer is running
 *
 */
 static void timer_callback(void *data) {
-          APP_LOG(APP_LOG_LEVEL_DEBUG,"Restore?: %d", needRestore);
+      APP_LOG(APP_LOG_LEVEL_DEBUG,"Restore?: %d", needRestore);
+    //if (persist_exists(PERSIST_KEY_WAKEUP_ID))   APP_LOG(APP_LOG_LEVEL_DEBUG,"WAKEUP WILL HAPPEN");
 
-      if (timer_time==0) { 
-//         persist_delete(PERSIST_KEY_WAKEUP_ID);
-//         wakeup_cancel(s_wakeup_id); 
-//         wakeup_cancel_all(); 
-//         app_timer_cancel(timer);
-//         window_stack_pop(false); 
-//         window_stack_push(loading_window, true); 
-//         if (needRestore) { 
-//           sendMessage(RESUME_KEY, "void");
-//           needRestore = false; 
-//         } 
-//         else if (nextMoveLoaded){
-//             if (lastMove) {
-//               finishWorkout(); 
-//               lastMove = false; 
-//               return; 
-//             }
-//             char * name = nextMoveName; 
-//             char * time = nextMoveTime; 
-//             advanceToMove(name, time);         
-//         }
-        advanceToNextMove(); 
-        //vibes_long_pulse(); //Vibrate Pebble 
-        vibes_short_pulse();
-      } 
-      else { 
-        timer_time--;    
-        //Convert int to string 
-        snprintf(time_str, 10, "%d", timer_time);
-        text_layer_set_text(timer_text, time_str); //Update the time
-        APP_LOG(APP_LOG_LEVEL_DEBUG,"Time left: %s",time_str);
-        //APP_LOG(APP_LOG_LEVEL_DEBUG,"One Second!");
-        timer = app_timer_register(1000 /* milliseconds */, timer_callback, NULL);
-      }
+    if (timer_time==0) { 
+      advanceToNextMove(); 
+      //vibes_long_pulse(); //Vibrate Pebble 
+      vibes_short_pulse();
+    } 
+    else { 
+      timer_time--;    
+      //Convert int to string 
+      snprintf(time_str, 10, "%d", timer_time);
+      text_layer_set_text(timer_text, time_str); //Update the time
+      APP_LOG(APP_LOG_LEVEL_DEBUG,"Time left: %s",time_str);
+      //APP_LOG(APP_LOG_LEVEL_DEBUG,"One Second!");
+      timer = app_timer_register(1000 /* milliseconds */, timer_callback, NULL);
+    }
 }
 
 //Pause the timer 
@@ -377,18 +356,7 @@ void stop_click_handler(ClickRecognizerRef recognizer, void *context) {
 
 //Cancels the current timer and goes to the next workout
 void next_click_handler(ClickRecognizerRef recognizer, void *context) { 
-    APP_LOG(APP_LOG_LEVEL_DEBUG,"Next Button clicked");
-//     paused = false; 
-//     persist_delete(PERSIST_PAUSE_KEY); 
-//     app_timer_cancel(timer);
-//     wakeup_cancel(s_wakeup_id); 
-//     window_stack_pop(true); 
-//     window_stack_push(loading_window, true); 
-//     if (needRestore){ 
-//       sendMessage(RESUME_KEY, "void");
-//       needRestore = false; 
-//     } 
-//     else sendMessage(DONE_KEY , "void"); 
+  APP_LOG(APP_LOG_LEVEL_DEBUG,"Next Button clicked");
   advanceToNextMove(); 
 }
 
@@ -423,10 +391,8 @@ void createTimer(char* name, char* time, int getNext) {
     APP_LOG(APP_LOG_LEVEL_DEBUG,"Creating Timer with name: %s and time: %s",name, time);
   
     window_stack_remove(timer_window, false); 
-
   
-    
-  window_stack_remove(loading_window, false); 
+    window_stack_remove(loading_window, false); 
   
     timer_window = window_create(); 
       window_set_window_handlers(timer_window, (WindowHandlers) {
@@ -498,46 +464,35 @@ void window_unload(Window *window) {
 */
 void addWorkout(char* title){ 
 
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "adding workout!");
-      
-        int totalworkouts = atoi(readFromStorage(0));
-        NUM_FIRST_MENU_ITEMS = totalworkouts; //Update NUM_FIRST_MENU_ITEMS
-        //Add message to storage and increase workout counter 
-        persist_write_string(NUM_FIRST_MENU_ITEMS+1, title); // Add to Totalworkouts +1 
-        APP_LOG(APP_LOG_LEVEL_DEBUG,"Message Added to Storage!");
-        APP_LOG(APP_LOG_LEVEL_DEBUG,"I just added workout %s to index %i", title, NUM_FIRST_MENU_ITEMS+1); 
-  
-        if (instructions) { //First workout in list
-            APP_LOG(APP_LOG_LEVEL_DEBUG, "Creating Menu Window");
-            //Create Window 
-            window = window_create(); 
-            window_set_window_handlers(window, (WindowHandlers) {
-              .load = window_load,
-              .unload = window_unload,
-            });
-            window_stack_push(window, true /* Animated */);
-            instructions = false; 
-        }
-  
-        //Convert int to string
-        char buffer[10];
-        snprintf(buffer, 10, "%d", NUM_FIRST_MENU_ITEMS+1);  
-        persist_write_string(0, buffer); //Increment workouts
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "adding workout!");
 
-        APP_LOG(APP_LOG_LEVEL_DEBUG,"Total Workouts %s", buffer); 
+      int totalworkouts = atoi(readFromStorage(0));
+      NUM_FIRST_MENU_ITEMS = totalworkouts; //Update NUM_FIRST_MENU_ITEMS
+      //Add message to storage and increase workout counter 
+      persist_write_string(NUM_FIRST_MENU_ITEMS+1, title); // Add to Totalworkouts +1 
+      APP_LOG(APP_LOG_LEVEL_DEBUG,"Message Added to Storage!");
+      APP_LOG(APP_LOG_LEVEL_DEBUG,"I just added workout %s to index %i", title, NUM_FIRST_MENU_ITEMS+1); 
+
+      if (instructions) { //First workout in list
+          APP_LOG(APP_LOG_LEVEL_DEBUG, "Creating Menu Window");
+          //Create Window 
+          window = window_create(); 
+          window_set_window_handlers(window, (WindowHandlers) {
+            .load = window_load,
+            .unload = window_unload,
+          });
+          window_stack_push(window, true /* Animated */);
+          instructions = false; 
+      }
+
+      //Convert int to string
+      char buffer[10];
+      snprintf(buffer, 10, "%d", NUM_FIRST_MENU_ITEMS+1);  
+      persist_write_string(0, buffer); //Increment workouts
+
+      APP_LOG(APP_LOG_LEVEL_DEBUG,"Total Workouts %s", buffer); 
 
 }
-
-//Minified Strtok (ignore) Thanks to Steve Caldwell for trick. 
-char*strtok(s,delim)
-register char*s;register const char*delim;{register char*spanp;register int c,sc;char*tok;static char*last;if(s==NULL&&(s=last)==NULL)
-return(NULL);cont:c=*s++;for(spanp=(char*)delim;(sc=*spanp++)!=0;){if(c==sc)
-goto cont;}
-if(c==0){last=NULL;return(NULL);}
-tok=s-1;for(;;){c=*s++;spanp=(char*)delim;do{if((sc=*spanp++)==c){if(c==0)
-s=NULL;else
-s[-1]=0;last=s;return(tok);}}while(sc!=0);}}
-
 
 enum {
       TYPE_KEY,
@@ -583,8 +538,7 @@ static void in_received_handler(DictionaryIterator *iter, void *context) {
         char * workouttitle;
   
         workouttitle = strtok (message,",");
-        while (workouttitle != NULL)
-        {
+        while (workouttitle != NULL){
           APP_LOG(APP_LOG_LEVEL_DEBUG, workouttitle);
           addWorkout(workouttitle); 
           workouttitle = strtok (NULL, ",");
@@ -595,17 +549,6 @@ static void in_received_handler(DictionaryIterator *iter, void *context) {
     }
       
     else if (strcmp(type,"end") == 0) { 
-        
-//         APP_LOG(APP_LOG_LEVEL_DEBUG, "Workout Finished");
-
-//         window_stack_remove(loading_window, false);
-//         window_stack_pop_all(false);
-//         window_stack_push(window, false); 
-
-//         //Show end Card
-//         showEndCard(); 
-      
-//         vibes_double_pulse(); 
       if (window_stack_get_top_window() == timer_window){   //Move is currently in progress
         lastMove = true; 
         text_layer_set_text(next_move_text, "Last Move!"); 
@@ -627,8 +570,7 @@ static void in_received_handler(DictionaryIterator *iter, void *context) {
           strcpy(nextMoveName, message);
           strcpy(nextMoveTime, message2);
           nextMoveLoaded = true; 
-          
-          
+                 
           persist_write_string( PERSIST_NEXT_MOVE_KEY, message); //Save next move
           persist_write_string( PERSIST_NEXT_MOVE_TIME_KEY, message2); //Save next move's time
           
@@ -636,81 +578,71 @@ static void in_received_handler(DictionaryIterator *iter, void *context) {
           strcat(upNext, message);
           APP_LOG(APP_LOG_LEVEL_DEBUG,"NEXT : %s", upNext); 
           text_layer_set_text(next_move_text, upNext); 
-
-
         }
-      else {
-            char * moveName = message; 
-            char * moveDuration = message2; 
-            advanceToMove(moveName, moveDuration);           
-      }
-          
-              /*
-            time_t future_time = time(NULL) + atoi(moveDuration);
-            s_wakeup_id = wakeup_schedule(future_time+1, 0, true); //Create Wakeup Timer
-            persist_write_int(PERSIST_KEY_WAKEUP_ID, s_wakeup_id); // Save wakeup id! 
-            persist_write_string( PERSIST_KEY_WAKEUP_NAME, moveName);  //Save move name
-            vibes_long_pulse();
-            createTimer(moveName,moveDuration);  */
-//                     char *message;
-//         message = "NONO";
-//           if (strcmp(message, "NONO")){
-//                     APP_LOG(APP_LOG_LEVEL_DEBUG,"ME "); 
-//           }
-//             APP_LOG(APP_LOG_LEVEL_DEBUG,"MESSAGE CHANGES %s", message); 
-
-        
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      
+        else {
+          char * moveName = message; 
+          char * moveDuration = message2; 
+          advanceToMove(moveName, moveDuration);           
+      }           
     } 
  }
-//TODO Specs
-void advanceToMove(char * moveName, char *moveDuration, int getNext){ 
-        time_t future_time = time(NULL) + atoi(moveDuration);
-        s_wakeup_id = wakeup_schedule(future_time+1, 0, true); //Create Wakeup Timer
-        persist_write_int(PERSIST_KEY_WAKEUP_ID, s_wakeup_id); // Save wakeup id! 
-        persist_write_string( PERSIST_KEY_WAKEUP_NAME, moveName);  //Save move name  
-        vibes_long_pulse();
 
-        createTimer(moveName,moveDuration, getNext);
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////  
+
+/**
+* Advance current workout to specified move
+* @param moveName name of the move to advance to
+* @param moveDuration time (in seconds) of move duration
+* @param getNext (boolean) true if Pebble should request the next workout from the phone
+**/
+void advanceToMove(char * moveName, char *moveDuration, int getNext){ 
+    time_t future_time = time(NULL) + atoi(moveDuration);
+
+    wakeup_cancel_all();
+    s_wakeup_id = wakeup_schedule(future_time+1, 0, true); //Create Wakeup Timer
+    persist_write_int(PERSIST_KEY_WAKEUP_ID, s_wakeup_id); // Save wakeup id! 
+    persist_write_string( PERSIST_KEY_WAKEUP_NAME, moveName);  //Save move name  
+    vibes_long_pulse();
+
+    createTimer(moveName,moveDuration, getNext);
 }
 
-//TODO Specs
+/**
+* Advances to the next move in the workout 
+**/
 void advanceToNextMove(){ 
     APP_LOG(APP_LOG_LEVEL_DEBUG,"-- Advancing to next move --");
-        paused = false; 
+    paused = false; 
 
-        persist_delete(PERSIST_NEXT_MOVE_KEY);
-        persist_delete(PERSIST_NEXT_MOVE_TIME_KEY);  
-  
-        persist_delete(PERSIST_KEY_WAKEUP_ID);
-        wakeup_cancel(s_wakeup_id); 
-        wakeup_cancel_all(); 
-        app_timer_cancel(timer);
-        window_stack_pop(false); 
-        window_stack_push(loading_window, true); 
-  
-        if (lastMove) {
-          finishWorkout(); 
-          lastMove = false; 
-          return; 
-          }
-  
-        if (needRestore) { 
-          needRestore = false; 
+    persist_delete(PERSIST_NEXT_MOVE_KEY);
+    persist_delete(PERSIST_NEXT_MOVE_TIME_KEY);  
 
-          if (nextMoveLoaded)  sendMessage(RESUME_KEY, "true");
-          else sendMessage(RESUME_KEY, "void");
-        } 
-  
-        else if (nextMoveLoaded){
-            nextMoveLoaded = false; 
-            char * name = nextMoveName; 
-            char * time = nextMoveTime; 
-            advanceToMove(name, time, true);         
-        }
-      light_enable_interaction(); 
+    persist_delete(PERSIST_KEY_WAKEUP_ID);
+    wakeup_cancel(s_wakeup_id); 
+    wakeup_cancel_all(); 
+    app_timer_cancel(timer);
+    window_stack_pop(false); 
+    window_stack_push(loading_window, true); 
+
+    if (lastMove) {
+      finishWorkout(); 
+      lastMove = false; 
+      return; 
+      }
+
+    if (needRestore) { 
+      needRestore = false; 
+      if (nextMoveLoaded)  sendMessage(RESUME_KEY, "true");
+      else sendMessage(RESUME_KEY, "void");
+    } 
+
+    else if (nextMoveLoaded){
+        nextMoveLoaded = false; 
+        char * name = nextMoveName; 
+        char * time = nextMoveTime; 
+        advanceToMove(name, time, true);         
+    }
+    light_enable_interaction(); 
 }
 
 
@@ -723,42 +655,40 @@ static void wakeup_handler(WakeupId id, int32_t reason) {
   
   window_stack_push(loading_window, false); 
   
-    if (persist_exists(PERSIST_NEXT_MOVE_KEY)){  
-      APP_LOG(APP_LOG_LEVEL_DEBUG, "There was a move preloaded!");
-      char * moveName = readFromStorage(PERSIST_NEXT_MOVE_KEY);
-      strcpy(nextMoveName, moveName );
-      strcpy(nextMoveTime, readFromStorage(PERSIST_NEXT_MOVE_TIME_KEY));
-      
-      nextMoveLoaded = true;  
-    } //TODO Refactor
+  if (persist_exists(PERSIST_NEXT_MOVE_KEY)){  
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "There was a move preloaded!");
+    char * moveName = readFromStorage(PERSIST_NEXT_MOVE_KEY);
+    strcpy(nextMoveName, moveName );
+    strcpy(nextMoveTime, readFromStorage(PERSIST_NEXT_MOVE_TIME_KEY));
+
+    nextMoveLoaded = true;  
+  } //TODO Refactor
   if(nextMoveLoaded) sendMessage(RESUME_KEY, "true");
-  else sendMessage(RESUME_KEY, "void");
-   
+  else sendMessage(RESUME_KEY, "void");  
 }
 
 int main(void) {
   
-  APP_LOG(APP_LOG_LEVEL_DEBUG,"C Code Started");
-  app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
-  app_message_register_inbox_received((AppMessageInboxReceived) in_received_handler);
-  // Subscribe to Wakeup API
-  wakeup_service_subscribe(wakeup_handler);
+    APP_LOG(APP_LOG_LEVEL_DEBUG,"C Code Started");
+    app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
+    app_message_register_inbox_received((AppMessageInboxReceived) in_received_handler);
+    // Subscribe to Wakeup API
+    wakeup_service_subscribe(wakeup_handler);
 
-  
-  if (!persist_exists(0)) { 
-        APP_LOG(APP_LOG_LEVEL_DEBUG,"First time using app");
-        persist_write_string(0, "0"); // Set workouts to 0
-  }
+    if (!persist_exists(0)) { 
+          APP_LOG(APP_LOG_LEVEL_DEBUG,"First time using app");
+          persist_write_string(0, "0"); // Set workouts to 0
+    }
 
   //Menu data
-  int totalworkouts = atoi(readFromStorage(0)); 
-  NUM_FIRST_MENU_ITEMS = totalworkouts; 
-  for (int i = 0; i<totalworkouts; i++) { //Populate workout_names array
-    char * temp = readFromStorage(i+1); 
-    //workout_names[i] =   temp;   // This does not work because of issues with pointers. (Every element becomes the last)
-    workout_names[i]= malloc(sizeof(char)*(strlen(temp)+1)); // Save workout titles
-    strcpy(workout_names[i],  temp);
-  }  
+    int totalworkouts = atoi(readFromStorage(0)); 
+    NUM_FIRST_MENU_ITEMS = totalworkouts; 
+    for (int i = 0; i<totalworkouts; i++) { //Populate workout_names array
+      char * temp = readFromStorage(i+1); 
+      //workout_names[i] =   temp;   // This does not work because of issues with pointers. (Every element becomes the last)
+      workout_names[i]= malloc(sizeof(char)*(strlen(temp)+1)); // Save workout titles
+      strcpy(workout_names[i],  temp);
+    }  
 
         window = window_create(); 
       window_set_window_handlers(window, (WindowHandlers) {
@@ -780,143 +710,146 @@ int main(void) {
   } 
   */
     //checkScheduledWakeup();
-  if (totalworkouts == 0) { 
+   if (totalworkouts == 0) { 
         showInstructions(); 
         instructions = true; 
-  }
+   }
   
         // Was this a wakeup?
-else if(launch_reason() == APP_LAUNCH_WAKEUP) {
-    // The app was started by a wakeup
-    WakeupId id = 0;
-    int32_t reason = 0;
-
-    // Get details and handle the wakeup
-    wakeup_get_launch_event(&id, &reason);
-    wakeup_handler(id, reason);
-  }
+   else if(launch_reason() == APP_LAUNCH_WAKEUP) {
+      // The app was started by a wakeup
+      WakeupId id = 0;
+      int32_t reason = 0;
   
+      // Get details and handle the wakeup
+      wakeup_get_launch_event(&id, &reason);
+      wakeup_handler(id, reason);
+   }
   
-else if (persist_exists(PERSIST_KEY_WAKEUP_ID) && persist_read_int(PERSIST_KEY_WAKEUP_ID) > 0 ){ 
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "======LOOKS LIKE I NEED TO RESTORE ======");
-
-    needRestore = true;
-//     wakeup_cancel_all(); 
-
-
-
-    if (persist_exists(PERSIST_NEXT_MOVE_KEY)){  
-      APP_LOG(APP_LOG_LEVEL_DEBUG, "There was a move preloaded!");
-      char * moveName = readFromStorage(PERSIST_NEXT_MOVE_KEY);
-      strcpy(nextMoveName, moveName );
-      strcpy(nextMoveTime, readFromStorage(PERSIST_NEXT_MOVE_TIME_KEY));
-      
-      nextMoveLoaded = true;  
-    }
+   else if (launch_reason() == APP_LAUNCH_USER ){
+      // else if (persist_exists(PERSIST_KEY_WAKEUP_ID) && persist_read_int(PERSIST_KEY_WAKEUP_ID) > 0 ){ 
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "======LOOKS LIKE I NEED TO RESTORE ======");
   
-    char* name = readFromStorage(PERSIST_KEY_WAKEUP_NAME); 
+      needRestore = true;
+      // wakeup_cancel_all(); 
   
-    if (persist_exists(PERSIST_PAUSE_KEY)){ 
-      int time_left =persist_read_int(PERSIST_PAUSE_KEY); 
-      snprintf(time_str, 10, "%d", time_left);
-      //paused = true; 
-      //createTimer(name, time_str, false); 
-      advanceToMove(name, time_str, false); 
-      pause_click_handler(NULL, NULL); 
-      
-      //sendMessage(RESTORE_KEY , "void");    
-    }
+      if (persist_exists(PERSIST_NEXT_MOVE_KEY)){  
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "There was a move preloaded!");
+        char * moveName = readFromStorage(PERSIST_NEXT_MOVE_KEY);
+        strcpy(nextMoveName, moveName );
+        strcpy(nextMoveTime, readFromStorage(PERSIST_NEXT_MOVE_TIME_KEY));
+        
+        nextMoveLoaded = true;  
+      }
     
-    else{ 
-      s_wakeup_id = persist_read_int(PERSIST_KEY_WAKEUP_ID); 
-      //There is a wakeup scheduled 
-      APP_LOG(APP_LOG_LEVEL_DEBUG, "Wakup already scheduled");
-      time_t timestamp = 0;
-      wakeup_query(s_wakeup_id, &timestamp);
-      int seconds_remaining = timestamp - time(NULL);
-      snprintf(time_str, 10, "%d", seconds_remaining);
-      APP_LOG(APP_LOG_LEVEL_DEBUG, "Seconds remaining %i", seconds_remaining);
-      APP_LOG(APP_LOG_LEVEL_DEBUG, "%s", time_str);
-      if (seconds_remaining > 0){ 
-        //createTimer(name, time_str, false); 
+      char* name = readFromStorage(PERSIST_KEY_WAKEUP_NAME); 
+    
+      if (persist_exists(PERSIST_PAUSE_KEY)){ 
+        int time_left =persist_read_int(PERSIST_PAUSE_KEY); 
+        snprintf(time_str, 10, "%d", time_left);
         advanceToMove(name, time_str, false); 
-
+        pause_click_handler(NULL, NULL); 
       }
-      else{ //Temporary solution
-        window_stack_push(window, true);
-      }
+    
+      else{ 
+        s_wakeup_id = persist_read_int(PERSIST_KEY_WAKEUP_ID); 
+        //There is a wakeup scheduled 
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "Wakup already scheduled");
+        time_t timestamp = 0;
+        
+        if (wakeup_query(s_wakeup_id, &timestamp)){ 
+           int seconds_remaining = timestamp - time(NULL);
+           snprintf(time_str, 10, "%d", seconds_remaining);
+           APP_LOG(APP_LOG_LEVEL_DEBUG, "Seconds remaining %i", seconds_remaining);
+           APP_LOG(APP_LOG_LEVEL_DEBUG, "%s", time_str);
+           advanceToMove(name, time_str, false); 
+        }
+        else { 
+          APP_LOG(APP_LOG_LEVEL_DEBUG, "SOMETHING WRONG WITH THE SAVED WAKEUP ");
+          //finishWorkout(); //Should never get here, but I'll check anyways
+          window_stack_push(window, true);
+        }      
     }
   }
   
-  else {
+    else {
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "NORMAL BOOT");
       window_stack_push(window, true);
-  }
-    
-          //persist_delete(PERSIST_KEY_WAKEUP_ID);
-
-  app_event_loop();
-  text_layer_destroy(text_layer);
-  window_destroy(window);
-  APP_LOG(APP_LOG_LEVEL_DEBUG,"Exiting..."); 
+    }
+  
+     //persist_delete(PERSIST_KEY_WAKEUP_ID);
+    app_event_loop();
+    text_layer_destroy(text_layer);
+    window_destroy(window);
+    APP_LOG(APP_LOG_LEVEL_DEBUG,"Exiting..."); 
 
 }
 
-
-
+/**
+* Finishes the current workout
+*/
 void finishWorkout(){ 
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "Workout Finished");
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Workout Finished");
 
-        window_stack_remove(loading_window, false);
-        window_stack_pop_all(false);
-        window_stack_push(window, false); 
+    window_stack_remove(loading_window, false);
+    window_stack_pop_all(false);
+    window_stack_push(window, false); 
 
-        //Show end Card
-        showEndCard(); 
-      
-        vibes_double_pulse(); 
+    showEndCard();      
+    vibes_double_pulse(); 
 }
 
 /*
 * Shows the instructions window to the user. 
 */
 void showInstructions(){    
-        static TextLayer *ins_text;
-        ins_window = window_create(); 
-        window_stack_push(ins_window, true);
-        Layer *ins_window_layer = window_get_root_layer(ins_window);
-        GRect bounds = layer_get_frame(ins_window_layer); 
-        ins_text = text_layer_create(GRect(0, 0, bounds.size.w /* width */, 150 /* height */));
-        text_layer_set_overflow_mode(ins_text, GTextOverflowModeWordWrap ); 
-        text_layer_set_text(ins_text, "Use your phone to add workouts. On the pebble app, find this timer app and click on settings icon. ");
-        text_layer_set_font(ins_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
-        text_layer_set_text_alignment(ins_text, GTextAlignmentLeft);
-        layer_add_child(ins_window_layer, text_layer_get_layer(ins_text)); 
+    static TextLayer *ins_text;
+    ins_window = window_create(); 
+    window_stack_push(ins_window, true);
+    Layer *ins_window_layer = window_get_root_layer(ins_window);
+    GRect bounds = layer_get_frame(ins_window_layer); 
+    ins_text = text_layer_create(GRect(0, 0, bounds.size.w /* width */, 150 /* height */));
+    text_layer_set_overflow_mode(ins_text, GTextOverflowModeWordWrap ); 
+    text_layer_set_text(ins_text, "Use your phone to add workouts. On the pebble app, find this timer app and click on settings icon. ");
+    text_layer_set_font(ins_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+    text_layer_set_text_alignment(ins_text, GTextAlignmentLeft);
+    layer_add_child(ins_window_layer, text_layer_get_layer(ins_text)); 
 }
 
 /*
 * Shows the end workout window to the user
 */
 void showEndCard(){
-        static Window *end_window; 
-        static TextLayer *end_text;
-        static TextLayer *end2_text;
-        end_window = window_create(); 
-        window_stack_push(end_window, true);
-        Layer *end_window_layer = window_get_root_layer(end_window);
-        GRect bounds = layer_get_frame(end_window_layer);
-    
-        end_text = text_layer_create(GRect(0, 10, bounds.size.w /* width */, 28 /* height */));
-        text_layer_set_text(end_text, "Congratulations!");
-        text_layer_set_font(end_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
-        text_layer_set_text_alignment(end_text, GTextAlignmentCenter);
-        layer_add_child(end_window_layer, text_layer_get_layer(end_text));
-      
-        end2_text = text_layer_create(GRect(0, 60, bounds.size.w /* width */, 30 /* height */));
-        text_layer_set_text(end2_text, "Workout Finished");
-        text_layer_set_font(end2_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
-        text_layer_set_text_alignment(end2_text, GTextAlignmentCenter);
-        layer_add_child(end_window_layer, text_layer_get_layer(end2_text));
+    static Window *end_window; 
+    static TextLayer *end_text;
+    static TextLayer *end2_text;
+    end_window = window_create(); 
+    window_stack_push(end_window, true);
+    Layer *end_window_layer = window_get_root_layer(end_window);
+    GRect bounds = layer_get_frame(end_window_layer);
+
+    end_text = text_layer_create(GRect(0, 10, bounds.size.w /* width */, 28 /* height */));
+    text_layer_set_text(end_text, "Congratulations!");
+    text_layer_set_font(end_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+    text_layer_set_text_alignment(end_text, GTextAlignmentCenter);
+    layer_add_child(end_window_layer, text_layer_get_layer(end_text));
+
+    end2_text = text_layer_create(GRect(0, 60, bounds.size.w /* width */, 30 /* height */));
+    text_layer_set_text(end2_text, "Workout Finished");
+    text_layer_set_font(end2_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+    text_layer_set_text_alignment(end2_text, GTextAlignmentCenter);
+    layer_add_child(end_window_layer, text_layer_get_layer(end2_text));
 }
+
+//Minified Strtok (ignore) Thanks to Steve Caldwell for trick. 
+char*strtok(s,delim)
+register char*s;register const char*delim;{register char*spanp;register int c,sc;char*tok;static char*last;if(s==NULL&&(s=last)==NULL)
+return(NULL);cont:c=*s++;for(spanp=(char*)delim;(sc=*spanp++)!=0;){if(c==sc)
+goto cont;}
+if(c==0){last=NULL;return(NULL);}
+tok=s-1;for(;;){c=*s++;spanp=(char*)delim;do{if((sc=*spanp++)==c){if(c==0)
+s=NULL;else
+s[-1]=0;last=s;return(tok);}}while(sc!=0);}}
 
 
 /*
