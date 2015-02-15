@@ -1,60 +1,64 @@
-Pebble Custom Workout Timer - Manual Testing Strategy: 
+Pebble Custom Workout Timer - Manual Testing Strategy:
 
     Pebble Side Tests
         First Use:
-            Check that instructions page shows 
+            Check that instructions page shows
 
-        Adding Workouts: 
+        Adding Workouts:
             All workouts entered should be displayed on the Pebble
 
-        Basic Timer: 
-            Starting a timer should show the first move along with a countdown. When the countdown gets to 0 the next move or a "congratulations" page should appear.  
-            Stop button should stop the timer and return to the workouts list. 
-            Pause button should pause the timer and indicate that it is paused, after another click the timer should resume. 
-            Next button should similate the countdown going to 0 and go to the next move. 
-                If the current move is paused the next one should not be. 
+        Basic Timer:
+            Starting a timer should show the first move along with a countdown. When the countdown gets to 0 the next move or a "congratulations" page should appear.
+            Stop button should stop the timer and return to the workouts list.
+            Pause button should pause the timer and indicate that it is paused, after another click the timer should resume.
+            Next button should similate the countdown going to 0 and go to the next move.
+                If the current move is paused the next one should not be.
 
-        Wakeup Tests: 
-            Going back from a running timer should keep the timer running and go to the main Pebble Menu. 
-                If you come back to the app, the updated time should be displayed along with the current move. 
-                    Everything should work according to the Basic Timer tests, even if the commands are entered right after the app is opened. 
-                If a move's countdown reaches 0 on the background (with the app closed). The app should open and load the next move. 
-            If the move was paused, the current state should be preserved when reopening the app. 
+        Wakeup Tests:
+            Going back from a running timer should keep the timer running and go to the main Pebble Menu.
+                If you come back to the app, the updated time should be displayed along with the current move.
+                    Everything should work according to the Basic Timer tests, even if the commands are entered right after the app is opened.
+                If a move's countdown reaches 0 on the background (with the app closed). The app should open and load the next move.
+            If the move was paused, the current state should be preserved when reopening the app.
 
-        Window Stack: 
-            Going back from a timer should always go back to the main Pebble Menu. 
-                Should never see the list of workouts while another timer is running. 
-            After a workout is completed (from the "congrats" page), a back press should go to the workouts list. 
+        Window Stack:
+            Going back from a timer should always go back to the main Pebble Menu.
+                Should never see the list of workouts while another timer is running.
+            After a workout is completed (from the "congrats" page), a back press should go to the workouts list.
+
+        Preloading tests:
+            When a move is in progress, the next move may be preloaded (if a timeley response from the phone is received) and shown on the screen.
+                In this case, loading the next screen should be instantaneous.
 
 
     WebView Phone Tests:
-        Add a workout page: 
+        Add a workout page:
             Should not be allowed to add move if either of these are true: (with proper error messages)
                 No move name
                 No move time (time = 0)
                 Move name has commas
             After adding a move, it should be displayed under the title (if any (yet)) with correct formatting for time
-                The Total Time should be updated accordingly. 
-            Should not be allowed to save workout if either of these are true: (with a proper error message) 
+                The Total Time should be updated accordingly.
+            Should not be allowed to save workout if either of these are true: (with a proper error message)
                 No moves are added
                 No title entered
                 Title has a comma.
-            After saving a workout, main page (with workout list) should appear. 
+            After saving a workout, main page (with workout list) should appear.
 
-        Main Page: 
-            Each workout should have a correct total time to the right. 
+        Main Page:
+            Each workout should have a correct total time to the right.
             Clicking on a workout name should expand the workout and show all of the moves
                 Each move should have its individual time
                 Each move should have an "Edit Move" button on the right
                     Clicking button should open a modal with options to change the move
                         Deleting the move should remove it from the list
-                        Any other updates should be reflected accordingly. 
-                Add Move button should open a modal with options to add move. 
-                    Same move restriction names (from above) appy. 
-                Delete Workout button should remove the workout from the list. 
-            Save Button on phone should return to the pebble app and update Pebble. 
-            Save Button on computer should show a success message with further instructions. 
+                        Any other updates should be reflected accordingly.
+                Add Move button should open a modal with options to add move.
+                    Same move restriction names (from above) appy.
+                Delete Workout button should remove the workout from the list.
+            Save Button on phone should return to the pebble app and update Pebble.
+            Save Button on computer should show a success message with further instructions.
 
-        FAQ Page: 
-            Questions and answers should be up to date with current version. 
-            Known issues should be up to date with current version. 
+        FAQ Page:
+            Questions and answers should be up to date with current version.
+            Known issues should be up to date with current version.
