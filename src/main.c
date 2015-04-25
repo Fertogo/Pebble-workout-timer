@@ -326,16 +326,13 @@ void pause_click_handler(ClickRecognizerRef recognizer, void *context) {
   if (paused) { 
     persist_delete(PERSIST_PAUSE_KEY); 
     text_layer_set_text(paused_text, "\0"); //Empty String
-    time_t future_time = time(NULL) + timer_time;
-    s_wakeup_id = wakeup_schedule(future_time+1, 0, true); 
-    persist_write_int(PERSIST_KEY_WAKEUP_ID, s_wakeup_id); // Save wakeup id! 
     timer = app_timer_register(1000 /* milliseconds */, timer_callback, NULL);
     paused = false; 
     
   } 
   else { 
     app_timer_cancel(timer);
-    wakeup_cancel(s_wakeup_id); 
+   // wakeup_cancel(s_wakeup_id); 
     persist_write_int(PERSIST_PAUSE_KEY, timer_time);
 
     text_layer_set_text(paused_text, "Paused");
@@ -349,7 +346,8 @@ void stop_click_handler(ClickRecognizerRef recognizer, void *context) {
     paused = false; 
     persist_delete(PERSIST_PAUSE_KEY); 
     app_timer_cancel(timer);
-    wakeup_cancel(s_wakeup_id); 
+    
+  wakeup_cancel(s_wakeup_id); 
     window_stack_pop(true); 
     window_stack_push(window, false); 
 }
@@ -360,15 +358,29 @@ void next_click_handler(ClickRecognizerRef recognizer, void *context) {
   advanceToNextMove(); 
 }
 
+//Schedule the wakup.
+static TextLayer *title_text; 
+
+void timer_back_click_handler(ClickRecognizerRef recognizer, void *context){ 
+  APP_LOG(APP_LOG_LEVEL_DEBUG,"Back Button clicked");
+
+  window_stack_pop(true); 
+  time_t future_time = time(NULL) + atoi(text_layer_get_text(timer_text));
+  s_wakeup_id = wakeup_schedule(future_time+1, 0, true); //Create Wakeup Timer
+  persist_write_int(PERSIST_KEY_WAKEUP_ID, s_wakeup_id); // Save wakeup id! 
+  persist_write_string( PERSIST_KEY_WAKEUP_NAME, text_layer_get_text(title_text));  //Save move name  
+}
+
 void timerwindow_click_config_provider(void *context){ 
     window_single_repeating_click_subscribe(BUTTON_ID_SELECT, 1000, pause_click_handler);
     window_single_repeating_click_subscribe(BUTTON_ID_UP, 1000, stop_click_handler);
     window_single_repeating_click_subscribe(BUTTON_ID_DOWN, 1000, next_click_handler);
+    window_single_click_subscribe(BUTTON_ID_BACK, timer_back_click_handler);
 }
 
 //Create Timer Function 
 static Window *timer_window; 
-static TextLayer *title_text; 
+// static TextLayer *title_text; 
 static TextLayer *next_move_text; 
 
 ActionBarLayer *action_bar;
@@ -454,9 +466,6 @@ void createTimer(char* name, char* time, int getNext) {
     //action_bar = action_bar_layer_create(); 
     action_bar_layer_add_to_window(action_bar, timer_window);
     action_bar_layer_set_click_config_provider(action_bar, timerwindow_click_config_provider);
-//     stopButton = gbitmap_create_with_resource(RESOURCE_ID_STOP_BUTTON);
-//     playPauseButton = gbitmap_create_with_resource(RESOURCE_ID_PLAY_PAUSE_BUTTON);
-//     nextButton = gbitmap_create_with_resource(RESOURCE_ID_NEXT_BUTTON);
     action_bar_layer_set_icon(action_bar, BUTTON_ID_UP, stopButton);
     action_bar_layer_set_icon(action_bar, BUTTON_ID_SELECT, playPauseButton);
     action_bar_layer_set_icon(action_bar, BUTTON_ID_DOWN, nextButton);
@@ -619,9 +628,6 @@ void advanceToMove(char * moveName, char *moveDuration, int getNext){
     time_t future_time = time(NULL) + atoi(moveDuration);
 
     wakeup_cancel_all();
-    s_wakeup_id = wakeup_schedule(future_time+1, 0, true); //Create Wakeup Timer
-    persist_write_int(PERSIST_KEY_WAKEUP_ID, s_wakeup_id); // Save wakeup id! 
-    persist_write_string( PERSIST_KEY_WAKEUP_NAME, moveName);  //Save move name  
     vibes_long_pulse();
 
     createTimer(moveName,moveDuration, getNext);
@@ -637,9 +643,6 @@ void advanceToNextMove(){
     persist_delete(PERSIST_NEXT_MOVE_KEY);
     persist_delete(PERSIST_NEXT_MOVE_TIME_KEY);  
 
-    persist_delete(PERSIST_KEY_WAKEUP_ID);
-    wakeup_cancel(s_wakeup_id); 
-    wakeup_cancel_all(); 
     app_timer_cancel(timer);
     window_stack_pop(false); 
     window_stack_push(loading_window, true); 
