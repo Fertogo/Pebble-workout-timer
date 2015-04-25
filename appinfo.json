@@ -14,14 +14,8 @@
     "resources": {
         "media": [
             {
-                "file": "images/menuicon.png",
-                "menuIcon": true,
-                "name": "MENU_ICON",
-                "type": "png"
-            },
-            {
-                "file": "images/Nextbtn.png",
-                "name": "NEXT_BUTTON",
+                "file": "images/Stopbtn.png",
+                "name": "STOP_BUTTON",
                 "type": "png"
             },
             {
@@ -30,12 +24,19 @@
                 "type": "png"
             },
             {
-                "file": "images/Stopbtn.png",
-                "name": "STOP_BUTTON",
+                "file": "images/Nextbtn.png",
+                "name": "NEXT_BUTTON",
+                "type": "png"
+            },
+            {
+                "file": "images/menuicon.png",
+                "menuIcon": true,
+                "name": "MENU_ICON",
                 "type": "png"
             }
         ]
     },
+    "sdkVersion": "2",
     "shortName": "Workout Timer",
     "uuid": "2add7054-08bc-4dda-b4d8-28f22f3d7ec2",
     "versionCode": 1,

@@ -376,6 +376,31 @@ static GBitmap *stopButton;
 static GBitmap *playPauseButton;
 static GBitmap *nextButton;
 
+
+void timer_window_init(){ 
+
+       timer_window = window_create(); 
+      window_set_window_handlers(timer_window, (WindowHandlers) {
+        .disappear = time_window_disappear,
+      });
+        APP_LOG(APP_LOG_LEVEL_DEBUG,"Loading Timer Window");
+
+      Layer *timer_window_layer = window_get_root_layer(timer_window);
+
+    GRect bounds = layer_get_frame(timer_window_layer);
+
+    title_text = text_layer_create(GRect(0, 10, bounds.size.w /* width */, 60 /* height */));
+    timer_text = text_layer_create(GRect(0, 60, bounds.size.w /* width */, 30 /* height */));
+    paused_text = text_layer_create(GRect(0, 120, bounds.size.w /* width */, 30 /* height */));
+    next_move_text = text_layer_create(GRect(0, 100, bounds.size.w /* width */, 30 /* height */));
+    action_bar = action_bar_layer_create(); 
+  
+     stopButton = gbitmap_create_with_resource(RESOURCE_ID_STOP_BUTTON);
+     playPauseButton = gbitmap_create_with_resource(RESOURCE_ID_PLAY_PAUSE_BUTTON);
+     nextButton = gbitmap_create_with_resource(RESOURCE_ID_NEXT_BUTTON);
+
+}
+
 char nameCopy[100]; 
 /*
 * Creates the main timer Window and starts the timer
@@ -385,7 +410,7 @@ char nameCopy[100];
 */
 void createTimer(char* name, char* time, int getNext) { 
 
-    strcpy(nameCopy, name);
+   strcpy(nameCopy, name);
     name = nameCopy;
       APP_LOG(APP_LOG_LEVEL_DEBUG,"NAME: %s",nameCopy);
     APP_LOG(APP_LOG_LEVEL_DEBUG,"Creating Timer with name: %s and time: %s",name, time);
@@ -394,49 +419,44 @@ void createTimer(char* name, char* time, int getNext) {
   
     window_stack_remove(loading_window, false); 
   
-    timer_window = window_create(); 
-      window_set_window_handlers(timer_window, (WindowHandlers) {
-        .disappear = time_window_disappear,
-      });
+
   
     window_stack_push(timer_window, true);
     Layer *timer_window_layer = window_get_root_layer(timer_window);
-    GRect bounds = layer_get_frame(timer_window_layer);
+//     GRect bounds = layer_get_frame(timer_window_layer);
 
-    title_text = text_layer_create(GRect(0, 10, bounds.size.w /* width */, 60 /* height */));
+//     title_text = text_layer_create(GRect(0, 10, bounds.size.w /* width */, 60 /* height */));
     text_layer_set_text(title_text, name);
     text_layer_set_font(title_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
     text_layer_set_text_alignment(title_text, GTextAlignmentCenter);
     text_layer_set_overflow_mode(title_text, GTextOverflowModeWordWrap);
     layer_add_child(timer_window_layer, text_layer_get_layer(title_text));
   
-    timer_text = text_layer_create(GRect(0, 60, bounds.size.w /* width */, 30 /* height */));
+    //timer_text = text_layer_create(GRect(0, 60, bounds.size.w /* width */, 30 /* height */));
     text_layer_set_text(timer_text, "");
     text_layer_set_font(timer_text, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
     text_layer_set_text_alignment(timer_text, GTextAlignmentCenter);
     layer_add_child(timer_window_layer, text_layer_get_layer(timer_text));
   
-    paused_text = text_layer_create(GRect(0, 120, bounds.size.w /* width */, 30 /* height */));
+    //paused_text = text_layer_create(GRect(0, 120, bounds.size.w /* width */, 30 /* height */));
     text_layer_set_text(paused_text, "\0"); //Empty String
     text_layer_set_font(paused_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
     text_layer_set_text_alignment(paused_text, GTextAlignmentCenter);
     layer_add_child(timer_window_layer, text_layer_get_layer(paused_text));
   
-    next_move_text = text_layer_create(GRect(0, 100, bounds.size.w /* width */, 30 /* height */));
+    //next_move_text = text_layer_create(GRect(0, 100, bounds.size.w /* width */, 30 /* height */));
     text_layer_set_text(next_move_text, "\0"); //Empty String
     text_layer_set_font(next_move_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
     text_layer_set_text_alignment(next_move_text, GTextAlignmentCenter);
     layer_add_child(timer_window_layer, text_layer_get_layer(next_move_text));
   
-  
-  
     //Set ActionBar
-    action_bar = action_bar_layer_create(); 
+    //action_bar = action_bar_layer_create(); 
     action_bar_layer_add_to_window(action_bar, timer_window);
     action_bar_layer_set_click_config_provider(action_bar, timerwindow_click_config_provider);
-    stopButton = gbitmap_create_with_resource(RESOURCE_ID_STOP_BUTTON);
-    playPauseButton = gbitmap_create_with_resource(RESOURCE_ID_PLAY_PAUSE_BUTTON);
-    nextButton = gbitmap_create_with_resource(RESOURCE_ID_NEXT_BUTTON);
+//     stopButton = gbitmap_create_with_resource(RESOURCE_ID_STOP_BUTTON);
+//     playPauseButton = gbitmap_create_with_resource(RESOURCE_ID_PLAY_PAUSE_BUTTON);
+//     nextButton = gbitmap_create_with_resource(RESOURCE_ID_NEXT_BUTTON);
     action_bar_layer_set_icon(action_bar, BUTTON_ID_UP, stopButton);
     action_bar_layer_set_icon(action_bar, BUTTON_ID_SELECT, playPauseButton);
     action_bar_layer_set_icon(action_bar, BUTTON_ID_DOWN, nextButton);
@@ -701,6 +721,8 @@ int main(void) {
         .load = loading_window_load,
         .unload = loading_window_unload,
       }); 
+  
+     timer_window_init(); 
   /* //Print Memory for debugging 
   APP_LOG(APP_LOG_LEVEL_DEBUG,"Printing Memory");   
   int i = 0; 
