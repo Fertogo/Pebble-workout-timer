@@ -2,7 +2,7 @@
 //By Fernando Trujano
 //    trujano@mit.edu
 // 02/15/2015
-var version = "2.6";
+var version = "2.7";
 //Sends workouts to watch app using Pebble.sendAppMesssage
 
 var counter = 0; 
@@ -35,7 +35,7 @@ Pebble.addEventListener("ready", function(e){
 Pebble.addEventListener("showConfiguration", function(){ 
   console.log("Showing Configuration v" + version);
   console.log(version); 
-  Pebble.openURL("http://fernandotrujano.com/pebble/index.html?info="+Pebble.getAccountToken()+','+version); 
+  Pebble.openURL("http://pebble.fernandotrujano.com/workout-manager.html?info="+Pebble.getAccountToken()+','+version); 
 });
 
 //After Closing settings view
