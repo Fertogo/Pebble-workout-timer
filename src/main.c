@@ -270,11 +270,15 @@ void window_load(Window *window) {
 
 static TextLayer *loading_text; 
 void loading_window_load(Window *loading_window){ 
+      APP_LOG(APP_LOG_LEVEL_DEBUG,"Loading Window Load"); 
+
    Layer *loading_window_layer = window_get_root_layer(loading_window);
     GRect bounds = layer_get_frame(loading_window_layer);
 
-    loading_text = text_layer_create(GRect(0, 10, bounds.size.w /* width */, 28 /* height */));
-    text_layer_set_text(loading_text, "Loading...");
+    loading_text = text_layer_create(GRect(0, 10, bounds.size.w /* width */, 80 /* height */));
+    if (bluetooth_connection_service_peek()) text_layer_set_text(loading_text, "Loading...");
+  
+    else text_layer_set_text(loading_text, "Please connect Pebble to Phone then try again.");
     text_layer_set_font(loading_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
     text_layer_set_text_alignment(loading_text, GTextAlignmentCenter);
     layer_add_child(loading_window_layer, text_layer_get_layer(loading_text));
@@ -299,7 +303,7 @@ static void time_window_disappear(Window *window){
 *
 */
 static void timer_callback(void *data) {
-      APP_LOG(APP_LOG_LEVEL_DEBUG,"Restore?: %d", needRestore);
+//      APP_LOG(APP_LOG_LEVEL_DEBUG,"Restore?: %d", needRestore);
     //if (persist_exists(PERSIST_KEY_WAKEUP_ID))   APP_LOG(APP_LOG_LEVEL_DEBUG,"WAKEUP WILL HAPPEN");
 
     if (timer_time==0) { 

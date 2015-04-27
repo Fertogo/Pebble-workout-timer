@@ -10,6 +10,22 @@ After installing, locate this app on the phone's Pebble app, then click on the s
 
 
 ###Changelog
+* **v2.7**
+  * Fix Memory Issues
+    * App will not crash on longer workouts
+  * Fix Wakeup bug
+    * Wakeups only scheduled when exiting app
+    * Fixes repeating move bug
+  * Phone not connected notification
+* **v2.6**
+  * Move preloading
+    * Next move preloads during current move -
+    * Significant performance improvement
+  * Extended move names
+    * Long moves can now take up two lines
+  * Miscellaneous bug fixes and improvements
+    * Backlight turns on when move changes
+    * Fixed pause and stop bug
 * **v2.5**
   * Background timers
      * Timers continue to run even if the app is closed
