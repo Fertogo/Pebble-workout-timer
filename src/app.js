@@ -6,22 +6,12 @@ var version = "2.7";
 //Sends workouts to watch app using Pebble.sendAppMesssage
 
 var counter = 0; 
-//Parses Json and sets multiple timers 
-function setTimers(moves) { 
-  //moves is supposed to be a 2D Array, but for some reason it is a string. Here is my fix. 
-  var moveslist = moves.split(','); //Now this is a 1D Array
-  console.log("On set timers. Move: " + moveslist[counter] + " Time: " +moveslist[counter+1] ); 
-  sendMessage("move" ,moveslist[counter] , moveslist[counter+1]); //SendMessage("move",move,time)
-  
-  counter+=2; //Since moves is 1D
-  window.localStorage.setItem("currentMoveCounter", counter); 
-  console.log("Timer set, incrementing counter to " + counter); 
-}
 
-function sendMessage(type, message1, message2){ 
+
+function sendMessage(type, message1, message2, message3){ 
   //Send Message to Pebble 
-      console.log("sending  message to watchapp " + type +" : "+ message1 + " : " + message2); 
-      Pebble.sendAppMessage( { "0": type, "1": message1, "2": message2 },
+  console.log("sending  message to watchapp " + type +" : "+ message1 + " : " + message2 + " : " + message3); 
+  Pebble.sendAppMessage( { "0": type, "1": message1, "2": message2, "3" : message3 },
         function(e) { console.log("Successfully delivered message");  },
         function(e) { console.log("Unable to deliver message " + " Error is: " + e.error.message); }                        
       );
@@ -35,7 +25,9 @@ Pebble.addEventListener("ready", function(e){
 Pebble.addEventListener("showConfiguration", function(){ 
   console.log("Showing Configuration v" + version);
   console.log(version); 
-  Pebble.openURL("http://pebble.fernandotrujano.com/workout-manager.html?info="+Pebble.getAccountToken()+','+version); 
+ // Pebble.openURL("http://pebble.fernandotrujano.com/workout-manager.html?info="+Pebble.getAccountToken()+','+version); 
+    Pebble.openURL("http://fernandotrujano.com/pebble/new/workout-manager.html?info=testReps,2,7"); 
+
 });
 
 //After Closing settings view
@@ -43,20 +35,22 @@ Pebble.addEventListener("showConfiguration", function(){
 Pebble.addEventListener("webviewclosed",
   function(e) {
     if (e.response != "CANCELLED") {
-      console.log("Configuration window returned: " + e.response); //Site should return {"workouts":[{"moves":[["move1",180]],"title":"AbRipperX"},{"moves":[["sdfsdfasdasdfaaaaaaa",68]],"title":"sdfsdf"},{"moves":[["sdf",60]],"title":"sdff"},{"moves":[["asdfasdf",64]],"title":"asdfdsfa"}]}
+      console.log("Configuration window returned: " + e.response); //See repo for json structure
 
       var json; 
-      json = JSON.parse(decodeURIComponent(e.response));  
-     // json = JSON.parse('{"workouts":[{"moves":[["move1",180]],"title":"1"},{"moves":[["sdfsdfasdasdfaaaaaaa",68]],"title":"2"},{"moves":[["sdf",60]],"title":"3"},{"moves":[["asdfasdf",64]],"title":"4"}]}');
+     // json = JSON.parse(decodeURIComponent(e.response));  
+      json = JSON.parse('{"workouts":[{"moves":[{"name":"Move 1","value":6,"type":"time"},{"name":"Move 2","value":7,"type":"time"},{"name":"Move 3","value":7,"type":"time"}],"title":"Just Time"},{"moves":[{"name":"move 1","value":6,"type":"reps"},{"name":"move 2","value":5,"type":"reps"},{"name":"move 3","value":12,"type":"reps"}],"title":"Just reps"},{"moves":[{"name":"move 1","value":16,"type":"time"},{"name":"move 2 reps","value":4,"type":"reps"},{"name":"move 3 time","value":6,"type":"time"},{"name":"move 4 reps","value":14,"type":"reps"}],"title":"Both"}]}')
+      
       var title; 
       var moves; 
       var workouts = []; 
+      
       console.log(json); 
       window.localStorage.clear(); 
       //Add Each workout
       for (var workout in json.workouts) {    
         title = json.workouts[workout].title; 
-        moves = json.workouts[workout].moves; 
+        moves = JSON.stringify(json.workouts[workout].moves); //Concert to string before saving!
         workouts.push(title); //Add to workouts array to be sent to Pebble 
         window.localStorage.setItem(title, moves);     //Save workout on local storage
       }
@@ -69,15 +63,29 @@ Pebble.addEventListener("webviewclosed",
   }
 );
 
+/**
+* Sends messages to Pebble with next timer to set
+* @param moves: list of objects representing moves {name: ,value: , type: }
+**/
+function setTimers(moves) { 
+  console.log("On set timers. Move: " + moves[counter].name + " Time: " + moves[counter].value + " Type: " + moves[counter].type ); 
+  
+  sendMessage("move", moves[counter].name, moves[counter].value.toString(), moves[counter].type); 
+  counter += 1; 
+  window.localStorage.setItem("currentMoveCounter", counter); 
+  
+  console.log("Message set, incrementing counter to " + counter); 
+}
 
 //Tries to advance to the next workout. If there are no more workouts, it notifies the Pebble.   
 function advanceWorkout(){ 
-        if( counter+1 < moves.split(',').length) //If there is at least one move left
-          {   setTimers(moves); } 
+
+      if( counter+1 < moves.length){   //If there is at least one move left
+          setTimers(moves);
+        } 
       else { 
         window.localStorage.removeItem("currentMoveCounter");
         window.localStorage.removeItem("currentWorkoutName");
-
         sendMessage("end"); 
       }
 }
@@ -86,21 +94,24 @@ function advanceWorkout(){
 // @param goBack 
 function restoreWorkout(goBack){
       currentWorkoutName = window.localStorage.getItem("currentWorkoutName");
-      moves = window.localStorage.getItem(currentWorkoutName); 
+      moves = JSON.parse(window.localStorage.getItem(currentWorkoutName)); 
       counter = parseInt(window.localStorage.getItem("currentMoveCounter"));   
-      if (goBack) counter -= 2; //go back a move since we are preloading moves 
+      if (goBack) counter -= 1; //go back a move since we are preloading moves 
 }
 
 //Starts a new workout based on given name
 function startNewWorkout(workoutName){ 
-        moves = window.localStorage.getItem(workoutName);
+        console.log("Starting new workout")
+        
+        moves = JSON.parse(window.localStorage.getItem(workoutName)); //LocalStorage saves items as stings, need to convert
+
         counter = 0; //Reset counter
         window.localStorage.setItem("currentMoveCounter", counter); 
         window.localStorage.setItem("currentWorkoutName", workoutName); 
         setTimers(moves);  
 }
 
-var moves = "";
+// var moves = "";
 //Recieve message from Pebble
 Pebble.addEventListener("appmessage",
   function(e) {
@@ -108,7 +119,6 @@ Pebble.addEventListener("appmessage",
           console.log("Received message: " + e.payload[type] + " of type: " + type);       
     }
     
-    //if (e.payload[1] == "resumeWorkout"){ 
     if ("RESUME" in e.payload){
       console.log("RESUME WORKOUT MESSAGE"); 
       console.log();
@@ -118,12 +128,10 @@ Pebble.addEventListener("appmessage",
       advanceWorkout();                
     }
     
-    //else if (e.payload[1] == "restoreWorkout"){ 
     else if ("RESTORE" in e.payload){
       restoreWorkout(); 
     }
     
-    //else if (e.payload[1] != "done"){ //Begin Workout  
       else if ("WORKOUT" in e.payload){
         console.log("RECEIVED WORKOUT MESSAGE:"); 
         startNewWorkout(e.payload["WORKOUT"]); 
@@ -131,7 +139,6 @@ Pebble.addEventListener("appmessage",
 
     //else  { 
     else if ("DONE" in e.payload){
-
       //console.log("Name was done, ab+out to set another timer with moves: "+ moves + " and counter: "+ counter); 
       advanceWorkout(); 
     } 
