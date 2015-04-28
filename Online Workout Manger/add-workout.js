@@ -29,12 +29,22 @@ $(document).ready(function(){
         $("#titletext").html("<h3>" + $("#title").val()+ "</h3>");
     });
 
+    $("#move-type").change(function(){
+        if ($("#move-type").is(':checked')) {  //Go into rep mode
+            $("#min-slider-container").hide();
+            $("#sec-slider-label").html("Repetitions");
+        }
+        else {
+            $("#min-slider-container").show();
+            $("#sec-slider-label").html("Seconds");
+        }
+    });
 
     // Add move the the workout based on current inputs
     $("#add-move").click(function(){
         var move = $("#move-name").val();
         var mins = $("#minute-slider").val();
-        var secs = $("#second-slider").val();
+        var secs = $("#second-slider").val(); //secs or reps if checked
         console.log(move);
         if (move.indexOf(',') > 0){
             $("#error1").html("Please don't user commas in move names").fadeIn();
@@ -42,34 +52,66 @@ $(document).ready(function(){
         else if (move == ""){
             $("#error1").html("Please enter a move title").fadeIn();
         }
-        else if (!(mins > 0 || secs >0)){
-            $("#error1").html("Please select a time for your move").fadeIn();
-        }
-        //else if (move != "" && (mins > 0 || secs >0)) {
-        else{
-            var time = (parseInt(mins) * 60)+parseInt(secs);
-            console.log(time);
 
-            totalsecs += time;
-            var timetext = timeText(time);
-            $("#move-list").append("<li>" + move +' for ' + timetext);
-            console.log(workout);
-            workout.moves.push([move, time]); // Add to workout
+        $("#move-type").is(':checked') ?  addRepMove(move, secs) : addTimeMove(move, mins, secs);
 
-            console.log("appended " + title);
-            console.log(workout);
-
-            $('#add-total-time').html("Total Time: "+timeText(totalsecs));
-            //Reset Values
-            $("#move-name").val("");
-            $("#minute-slider").val("0");
-            $("#minute-slider").slider("refresh");
-            $("#second-slider").val("0");
-            $("#second-slider").slider("refresh");
-            $('#move-list').listview('refresh');
-            $("#error1").fadeOut();
-        }
     });
+
+    function addRepMove(move, reps){
+        if (reps <= 0){
+            $("#error1").html("You need at least one rep").fadeIn();
+            return;
+        }
+
+        $("#move-list").append("<li>" + move + ' for ' + reps + (reps == 1 ? " rep" : " reps") + "</li>");
+
+        workout.moves.push({
+            "name" : move,
+            "value" : parseInt(reps),
+            "type" : "reps"
+        });
+
+        console.log(workout);
+        resetMove();
+    }
+
+    function addTimeMove(move, mins, secs){
+        if (!(mins > 0 || secs >0)){
+            $("#error1").html("Please select a time for your move").fadeIn();
+            return;
+        }
+
+        var time = (parseInt(mins) * 60)+parseInt(secs);
+        console.log(time);
+
+        totalsecs += time;
+        var timetext = timeText(time);
+        $("#move-list").append("<li>" + move +' for ' + timetext + "</li>");
+        console.log(workout);
+
+        workout.moves.push({  //Add to workout
+            "name" : move,
+            "value" : time,
+            "type" : "time"
+        });
+
+        console.log("appended " + title);
+        console.log(workout);
+
+        $('#add-total-time').html("Total Time: "+timeText(totalsecs));
+        resetMove();
+    }
+
+    function resetMove() {
+        //Reset Values
+        $("#move-name").val("");
+        $("#minute-slider").val("0");
+        $("#minute-slider").slider("refresh");
+        $("#second-slider").val("0");
+        $("#second-slider").slider("refresh");
+        $('#move-list').listview('refresh');
+        $("#error1").fadeOut();
+    }
 
 
     //Save new workout if valid

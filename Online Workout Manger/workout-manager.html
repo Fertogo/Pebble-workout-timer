@@ -88,10 +88,20 @@
                 <form id="settings">
                         <label for="title">  Workout Title:</label>       <input type="text" required name="title" id="title" data-clear-btn="true"> <br>
                         <hr>
-                        <label for="move-name">Add Move: </label> <input type="text" id="move-name" data-clear-btn="true">
-                        <label for="minute-slider" class="">Minutes</label>
-                        <input type="range" name="minute-slider" id="minute-slider" data-highlight="true" min="0" max="15" value="0" step="1">
-                        <label for="second-slider" class="">Seconds</label>
+
+                        <fieldset class="ui-grid-a">
+                            <div class="ui-block-a" style="width:80px" > <label for="move-name">Add Move: </label>  </div>
+                            <div class="move-type-selector" >
+                                <label for="move-type" style="display:inline-block">Move type: </label>
+                                <input type="checkbox" data-role="flipswitch" name="move-type" id="move-type" data-on-text="Reps" data-off-text="Time" data-wrapper-class="custom-label-flipswitch" >
+                            </div>
+                        </fieldset>
+                        <input type="text" id="move-name" data-clear-btn="true">
+                        <div id="min-slider-container">
+                            <label for="minute-slider">Minutes</label>
+                            <input type="range" name="minute-slider" id="minute-slider" data-highlight="true" min="0" max="15" value="0" step="1">
+                        </div>
+                        <label for="second-slider" id="sec-slider-label">Seconds</label>
                         <input type="range" name="second-slider" id="second-slider" data-highlight="true" min="0" max="59" value="0" step="1">
                 </form>
 
@@ -124,9 +134,11 @@
 
                 <label>Name</label>
                 <input type="text" data-clear-btn="true" name="edit-title" id="edit-title" value="5">
-                <label for="slider-2">Minutes</label>
-                <input type="range"  class="slider" id="edit-minute-slider" data-highlight="true" min="0" max="60" value="5">
-                <label for="slider-2">Seconds</label>
+                <span id="edit-minute-container">
+                    <label for="slider-2">Minutes</label>
+                    <input type="range"  class="slider" id="edit-minute-slider" data-highlight="true" min="0" max="60" value="5">
+                </span>
+                <label for="slider-2" id="edit-second-slider-label">Seconds</label>
                 <input type="range" class="slider" id="edit-second-slider" data-highlight="true" min="0" max="59" value="5">
             </form>
 

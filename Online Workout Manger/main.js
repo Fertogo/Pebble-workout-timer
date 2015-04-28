@@ -23,11 +23,12 @@ function populateHTML() {
             var workout_title = workout.title.replace(/\s/g, '-');
             var jQuerySelectorsRe = new RegExp('[\\[!"#$%&\'()*+,.:;<=>?@^`{|}~\\]]',"g");
             var workout_selector = workout_title.replace(jQuerySelectorsRe, "\\$&");
+            var workoutHasReps = false;
 
-            $.each(workout.moves, function(j, move){ maintotaltime += parseInt(move[1]) }); //Please optimize
-            $("#workout-list").append('<div data-role="collapsible" id="workoutcollapsible" > <h4>'+ workout.title + ' <span class="totaltime" style="float:right" id="total-time">'+ timeText(maintotaltime)+' </span>  </h4> <ul class="move-list" id="' + workout_title+'" data-role="listview">');
+            $.each(workout.moves, function(j, move){ maintotaltime += (move.type == "reps" ? 0 :parseInt(move.value)); if (move.type == "reps") workoutHasReps = true;  }); //Please optimize
+            $("#workout-list").append('<div data-role="collapsible" id="workoutcollapsible" > <h4>'+ workout.title + ' <span class="totaltime" style="float:right" id="total-time">'+ timeText(maintotaltime) + (workoutHasReps ? " + reps" : "")+' </span>  </h4> <ul class="move-list" id="' + workout_title+'" data-role="listview">');
             $.each(workout.moves, function(j, move){  //Add moves
-                $("#"+workout_selector).append('<li data-icon="gear"> <a href="#edit-popup" id="'+ i + ','+j+ '" class="editlink" data-rel="popup" data-position-to="window" data-role="button"  data-transition="pop">'+move[0]+' <small class="totaltile"> for ' + timeText(parseInt(move[1]))+'</small>   <p class="ui-li-aside">Edit Move</p> </a> </li> ');
+                $("#"+workout_selector).append('<li data-icon="gear"> <a href="#edit-popup" id="'+ i + ','+j+ '" class="editlink" data-rel="popup" data-position-to="window" data-role="button"  data-transition="pop">'+move.name+' <small class="totaltile"> for ' + (move.type == "reps" ? move.value + " reps" : timeText(parseInt(move.value)))+'</small>   <p class="ui-li-aside">Edit Move</p> </a> </li> ');
                 console.log(maintotaltime);
             });
                 $("#"+workout_selector).append('<li><fieldset class="ui-grid-a"><div class="ui-block-a"><a href="#edit-popup" id="'+ i+ '" class="add-move-to-existing" data-rel="popup" data-position-to="window" data-role="button"  data-transition="pop"><button class="li-btn" data-mini="true" data-icon="plus" >Add Move</button></a> </div><div class="ui-block-b"><a href="#" id="'+ i+ '" class="delete-workout"><button data-mini="true" class="delete li-btn" data-icon="delete">Delete Workout</button></a> </div></fieldset></li>  ');
@@ -104,7 +105,7 @@ $(document).ready(function(){
             console.log("ajax funciton called");
             console.log(json);
         }
-    })
+    });
 
     $("#cancel-btn").click(function() {
         document.location = "pebblejs://close#";

@@ -17,10 +17,22 @@ $(document).ready(function(){
         var id = this.id.replace(/id/,'').split(',');
         console.log(id);
         var move = json.workouts[id[0]].moves[id[1]];
+        console.log(move);
 
-        $("#edit-title").val(move[0]);
-        $("#edit-minute-slider").val((move[1] - move[1]%60)/60);
-        $("#edit-second-slider").val(move[1]%60);
+        $("#edit-title").val(move.name);
+        if (move.type == "reps"){
+            $("#edit-minute-container").hide();
+            $("#edit-second-slider").val(move.value);
+            $("#edit-second-slider-label").text("Repetitions");
+        }
+        else {
+            $("#edit-minute-container").show();
+
+            $("#edit-minute-slider").val((move.value - move.value%60)/60);
+            $("#edit-second-slider").val(move.value%60);
+            $("#edit-second-slider-label").text("Seconds");
+
+        }
 
         $("#edit-second-slider").slider("refresh");
         $("#edit-minute-slider").slider("refresh");
@@ -29,6 +41,7 @@ $(document).ready(function(){
         $("#edit-save-btn").val(id[0]+','+id[1]);
     });
 
+    //TODO add reps support
     $(document).on('click', '.add-move-to-existing', function(){
 
         $("#edit-delete-btn").hide();
@@ -54,22 +67,43 @@ $(document).ready(function(){
     });
 
     $("#edit-save-btn").click(function(){
+        console.log("Edit save")
         //Edit json
         var id = $(this).val().split(',');
         var title = $("#edit-title").val();
         console.log(title);
         var mins = $("#edit-minute-slider").val();
         var secs = $("#edit-second-slider").val();
-        if (title != "" && (mins > 0 || secs >0) && !(title.indexOf(',') > 0)) {
-            var time = (parseInt(mins)*60)+parseInt(secs);
-            json.workouts[id[0]].moves[id[1]] = [title , time];
+        var move = json.workouts[id[0]].moves[id[1]];
+
+        if (move.type == "reps"){ //TODO DRY
+            if (secs <= 0 || title == "") {
+                $("#popup-error").fadeIn();
+                return;
+            }
+            move.name = title;
+            move.value = secs;
             console.log("Edited");
             populateHTML();
             console.log(id);
             $("#popup-error").fadeOut();
             $("#edit-popup").popup('close');
         }
-        else $("#popup-error").fadeIn();
+
+        else { //Regular Time workout
+            if (title != "" && (mins > 0 || secs >0) && !(title.indexOf(',') > 0)) {
+                var time = (parseInt(mins)*60)+parseInt(secs);
+                move.name = title;
+                move.value = time;
+
+                console.log("Edited");
+                populateHTML();
+                console.log(id);
+                $("#popup-error").fadeOut();
+                $("#edit-popup").popup('close');
+            }
+            else $("#popup-error").fadeIn();
+        }
     });
 
     $("#edit-cancel-btn").click(function(){

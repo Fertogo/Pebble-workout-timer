@@ -47,3 +47,17 @@ a:link {
      overflow: visible;
      white-space: normal;
  }
+
+
+/*Add workout page*/
+.custom-label-flipswitch.ui-flipswitch .ui-btn.ui-flipswitch-on {
+    text-indent: -3.4em;
+ }
+ .custom-label-flipswitch.ui-flipswitch .ui-flipswitch-off {
+    text-indent: 0.5em;
+ }
+
+.move-type-selector{
+     float:right;
+     width:185px;
+}
