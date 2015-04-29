@@ -10,6 +10,17 @@ After installing, locate this app on the phone's Pebble app, then click on the s
 
 
 ###Changelog
+* **v3.0**
+##### This update changes the way workouts are stored. See README and `migrate-workouts.py`
+
+  * New Move type: Repetitions
+    * Can now set a move with reps, click next to advance one rep
+    * Long press next to go to next move
+  * Updated Online Workout Manager
+    * Allows for easy adding of rep moves
+  * Migrated all workouts to new format
+    * This is required and makes the update to 3.0 mandatory. 
+  * Code clean-up and bug fixes
 * **v2.7**
   * Fix Memory Issues
     * App will not crash on longer workouts
@@ -58,13 +69,22 @@ The online workout manager creates a json file with an array of workouts. Format
         {
             "title": "Workout Title",
             "moves": [
-                ["Move 1",19], ["Move 2",120] //[Move-name, time(seconds)] ...
+                {
+                  "name" : "Move 1", 
+                  "value" : 19, //secs
+                  "type" : "time"
+                },
+                {
+                  "name" : "Move 2", 
+                  "value" : 5, //secs
+                  "type" : "reps"
+                }
             ]
         },
         {
             "title": "Workout Title",
             "moves": [
-                ["Another move",15], ["Move",30] 
+                //...
             ]
         }
         //...
