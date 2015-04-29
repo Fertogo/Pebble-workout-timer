@@ -1,8 +1,8 @@
 //Pebble JS Component of timer. 
 //By Fernando Trujano
 //    trujano@mit.edu
-// 02/15/2015
-var version = "2.7";
+// 04/29/2015
+var version = "3.0";
 //Sends workouts to watch app using Pebble.sendAppMesssage
 
 var counter = 0; 
@@ -25,8 +25,8 @@ Pebble.addEventListener("ready", function(e){
 Pebble.addEventListener("showConfiguration", function(){ 
   console.log("Showing Configuration v" + version);
   console.log(version); 
- // Pebble.openURL("http://pebble.fernandotrujano.com/workout-manager.html?info="+Pebble.getAccountToken()+','+version); 
-    Pebble.openURL("http://fernandotrujano.com/pebble/new/workout-manager.html?info=testReps,2,7"); 
+  Pebble.openURL("http://fernandotrujano.com/pebble/workout-manager.html?info="+Pebble.getAccountToken()+','+version); 
+   // Pebble.openURL("http://fernandotrujano.com/pebble/new/workout-manager.html?info=migrate,2.7"); 
 
 });
 
@@ -38,8 +38,8 @@ Pebble.addEventListener("webviewclosed",
       console.log("Configuration window returned: " + e.response); //See repo for json structure
 
       var json; 
-     // json = JSON.parse(decodeURIComponent(e.response));  
-      json = JSON.parse('{"workouts":[{"moves":[{"name":"Move 1","value":6,"type":"time"},{"name":"Move 2","value":7,"type":"time"},{"name":"Move 3","value":7,"type":"time"}],"title":"Just Time"},{"moves":[{"name":"move 1","value":6,"type":"reps"},{"name":"move 2","value":5,"type":"reps"},{"name":"move 3","value":12,"type":"reps"}],"title":"Just reps"},{"moves":[{"name":"move 1","value":16,"type":"time"},{"name":"move 2 reps","value":4,"type":"reps"},{"name":"move 3 time","value":6,"type":"time"},{"name":"move 4 reps","value":14,"type":"reps"}],"title":"Both"}]}')
+      json = JSON.parse(decodeURIComponent(e.response));  
+      //json = JSON.parse('{"workouts":[{"moves":[{"name":"Move 1","value":6,"type":"time"},{"name":"Move 2","value":7,"type":"time"},{"name":"Move 3","value":7,"type":"time"}],"title":"Just Time"},{"moves":[{"name":"move 1","value":6,"type":"reps"},{"name":"move 2","value":5,"type":"reps"},{"name":"move 3","value":12,"type":"reps"}],"title":"Just reps"},{"moves":[{"name":"move 1","value":16,"type":"time"},{"name":"move 2 reps","value":4,"type":"reps"},{"name":"move 3 time","value":6,"type":"time"},{"name":"move 4 reps","value":14,"type":"reps"}],"title":"Both"}]}')
       
       var title; 
       var moves; 
@@ -80,7 +80,7 @@ function setTimers(moves) {
 //Tries to advance to the next workout. If there are no more workouts, it notifies the Pebble.   
 function advanceWorkout(){ 
 
-      if( counter+1 < moves.length){   //If there is at least one move left
+      if( counter+1 <= moves.length){   //If there is at least one move left
           setTimers(moves);
         } 
       else { 

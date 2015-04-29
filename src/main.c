@@ -1,7 +1,7 @@
-//Custom Workout Timer for Pebble. v 2.7
+//Custom Workout Timer for Pebble. v 3.0
 //By Fernando Trujano
 //    trujano@mit.edu
-// 04/26/2015
+// 04/29/2015
 
 #include "pebble.h"
 #include<stdlib.h>
@@ -11,11 +11,12 @@
 #define PERSIST_KEY_WAKEUP_ID 337
 #define PERSIST_KEY_WAKEUP_NAME 338
 #define PERSIST_KEY_WAKEUP_TYPE 339
+#define PERSIST_KEY_WAKEUP_VALUE 340
 
-#define PERSIST_PAUSE_KEY 340
-#define PERSIST_NEXT_MOVE_KEY 341
-#define PERSIST_NEXT_MOVE_TIME_KEY 342
-#define PERSIST_NEXT_MOVE_TYPE_KEY 343
+#define PERSIST_PAUSE_KEY 341
+#define PERSIST_NEXT_MOVE_KEY 342
+#define PERSIST_NEXT_MOVE_TIME_KEY 343
+#define PERSIST_NEXT_MOVE_TYPE_KEY 344
 
   
 //Message Types
@@ -144,6 +145,7 @@ void clearMemory() {
     persist_delete(PERSIST_KEY_WAKEUP_ID);
     persist_delete(PERSIST_KEY_WAKEUP_NAME);
     persist_delete(PERSIST_KEY_WAKEUP_TYPE);
+    persist_delete(PERSIST_KEY_WAKEUP_VALUE);
 
     persist_delete(PERSIST_PAUSE_KEY);
     persist_delete(PERSIST_NEXT_MOVE_KEY);
@@ -369,13 +371,17 @@ void timer_back_click_handler(ClickRecognizerRef recognizer, void *context){
   s_wakeup_id = wakeup_schedule(future_time, 0, true); //Create Wakeup Timer
   persist_write_int(PERSIST_KEY_WAKEUP_ID, s_wakeup_id); // Save wakeup id! 
   persist_write_string( PERSIST_KEY_WAKEUP_NAME, text_layer_get_text(title_text));  //Save move name  
-  persist_write_string( PERSIST_KEY_WAKEUP_TYPE, currentMoveType); 
+  persist_write_string( PERSIST_KEY_WAKEUP_TYPE, "time"); 
 
 }
 
 void rep_back_click_handler(ClickRecognizerRef recognizer, void *context){ 
   APP_LOG(APP_LOG_LEVEL_DEBUG,"Back Rep Button clicked");
-  window_stack_pop(true); 
+  window_stack_pop(true);
+  persist_write_string( PERSIST_KEY_WAKEUP_NAME, text_layer_get_text(title_text));  //Save move name  
+  persist_write_string( PERSIST_KEY_WAKEUP_TYPE, "reps"); 
+  persist_write_string( PERSIST_KEY_WAKEUP_VALUE, text_layer_get_text(timer_text));  //Save move name  
+
 }
 
 void next_rep_click_handler(ClickRecognizerRef recognizer, void *context) { 
@@ -412,7 +418,7 @@ ActionBarLayer *action_bar;
 static GBitmap *stopButton;
 static GBitmap *playPauseButton;
 static GBitmap *nextButton;
-
+ InverterLayer * inverterLayer; 
 
 void timer_window_init(){ 
 
@@ -428,8 +434,8 @@ void timer_window_init(){
 
     title_text = text_layer_create(GRect(0, 10, bounds.size.w /* width */, 60 /* height */));
   
-  
-    text_layer_set_font(title_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+    text_layer_set_font(title_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));    
+
     text_layer_set_text_alignment(title_text, GTextAlignmentCenter);
     text_layer_set_overflow_mode(title_text, GTextOverflowModeWordWrap);
     layer_add_child(timer_window_layer, text_layer_get_layer(title_text));
@@ -450,10 +456,17 @@ void timer_window_init(){
     layer_add_child(timer_window_layer, text_layer_get_layer(next_move_text));
   
     action_bar = action_bar_layer_create(); 
+    action_bar_layer_add_to_window(action_bar, timer_window);
+
+    stopButton = gbitmap_create_with_resource(RESOURCE_ID_STOP_BUTTON);
+    playPauseButton = gbitmap_create_with_resource(RESOURCE_ID_PLAY_PAUSE_BUTTON);
+    nextButton = gbitmap_create_with_resource(RESOURCE_ID_NEXT_BUTTON);
+    action_bar_layer_set_icon(action_bar, BUTTON_ID_UP, stopButton);
+    action_bar_layer_set_icon(action_bar, BUTTON_ID_DOWN, nextButton);
+
   
-     stopButton = gbitmap_create_with_resource(RESOURCE_ID_STOP_BUTTON);
-     playPauseButton = gbitmap_create_with_resource(RESOURCE_ID_PLAY_PAUSE_BUTTON);
-     nextButton = gbitmap_create_with_resource(RESOURCE_ID_NEXT_BUTTON);
+    inverterLayer =  inverter_layer_create(bounds);
+    layer_add_child(timer_window_layer, inverter_layer_get_layer(inverterLayer));
 
 }
 
@@ -494,11 +507,9 @@ void createTimer(char* name, char* time, int reps, int getNext) {
   
     else { 
         //Set ActionBar
-        action_bar_layer_add_to_window(action_bar, timer_window);
+        layer_set_hidden(inverter_layer_get_layer(inverterLayer), true); 
         action_bar_layer_set_click_config_provider(action_bar, timerwindow_click_config_provider);
-        action_bar_layer_set_icon(action_bar, BUTTON_ID_UP, stopButton);
         action_bar_layer_set_icon(action_bar, BUTTON_ID_SELECT, playPauseButton);
-        action_bar_layer_set_icon(action_bar, BUTTON_ID_DOWN, nextButton);
 
         timer_time = atoi(time);
         if (paused) { 
@@ -508,8 +519,6 @@ void createTimer(char* name, char* time, int reps, int getNext) {
           timer = app_timer_register(1 /* milliseconds */, timer_callback, NULL);  
         }  
     }
-
- 
 }
 
 void createReps(char* name, char* reps) { 
@@ -518,13 +527,11 @@ void createReps(char* name, char* reps) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Looks like I got some reps! ");
     APP_LOG(APP_LOG_LEVEL_DEBUG,"Creating Reps with name: %s and reps: %s",name, reps);
     text_layer_set_text(timer_text, reps);
-    text_layer_set_text(paused_text, "Rep Mode: Click next"); 
-  
-    action_bar_layer_add_to_window(action_bar, timer_window);
+    text_layer_set_text(paused_text, "Rep Mode"); 
+    layer_set_hidden(inverter_layer_get_layer(inverterLayer), false);
+
     action_bar_layer_set_click_config_provider(action_bar, repwindow_click_config_provider);
-    action_bar_layer_set_icon(action_bar, BUTTON_ID_UP, stopButton);
     action_bar_layer_set_icon(action_bar, BUTTON_ID_SELECT, NULL);
-    action_bar_layer_set_icon(action_bar, BUTTON_ID_DOWN, nextButton);
 }
 
 void window_unload(Window *window) {
@@ -810,12 +817,20 @@ int main(void) {
 
         nextMoveLoaded = true;  
       }
-    
-      char* name = readFromStorage(PERSIST_KEY_WAKEUP_NAME); 
-      char* type = readFromStorage(PERSIST_KEY_WAKEUP_TYPE); 
+      
+      char name[100];
+      char type[6]; 
+      char value[5];
+
+         strcpy(name, readFromStorage(PERSIST_KEY_WAKEUP_NAME));
+         strcpy(type, readFromStorage(PERSIST_KEY_WAKEUP_TYPE));
+
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "Move Name: %s", name);
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "Move Type: %s", type);
+
 
     
-      if (persist_exists(PERSIST_PAUSE_KEY)){ 
+      if (persist_exists(PERSIST_PAUSE_KEY) && strcmp(type, "time") == 0){ 
         int time_left =persist_read_int(PERSIST_PAUSE_KEY); 
         snprintf(time_str, 10, "%d", time_left);
         advanceToMove(name, time_str, type, false); 
@@ -826,9 +841,14 @@ int main(void) {
         s_wakeup_id = persist_read_int(PERSIST_KEY_WAKEUP_ID); 
         //There is a wakeup scheduled 
         APP_LOG(APP_LOG_LEVEL_DEBUG, "Wakup already scheduled");
-        time_t timestamp = 0;
         
-        if (wakeup_query(s_wakeup_id, &timestamp)){ 
+        time_t timestamp = 0;
+
+        if (strcmp(type, "reps") == 0 ){ //Rep move was on
+            strcpy(value, readFromStorage(PERSIST_KEY_WAKEUP_VALUE));
+            advanceToMove(name,value,type,false);
+        }
+        else if (wakeup_query(s_wakeup_id, &timestamp) ) { //Time move was on 
            int seconds_remaining = timestamp - time(NULL);
            snprintf(time_str, 10, "%d", seconds_remaining);
            APP_LOG(APP_LOG_LEVEL_DEBUG, "Seconds remaining %i", seconds_remaining);

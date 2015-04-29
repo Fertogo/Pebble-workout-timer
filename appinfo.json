@@ -40,7 +40,7 @@
     "shortName": "Workout Timer",
     "uuid": "2add7054-08bc-4dda-b4d8-28f22f3d7ec2",
     "versionCode": 1,
-    "versionLabel": "2.7",
+    "versionLabel": "3.0",
     "watchapp": {
         "watchface": false
     }
