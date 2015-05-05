@@ -333,6 +333,19 @@ static void time_window_disappear(Window *window){
 }
 
 /*
+* Deletes all keys used by last workout. 
+*
+*/ 
+void deleteKeys(){ 
+    persist_delete(PERSIST_PAUSE_KEY); 
+    persist_delete(PERSIST_KEY_WAKEUP_TYPE); 
+    persist_delete(PERSIST_KEY_WAKEUP_ID);
+    persist_delete(PERSIST_KEY_WAKEUP_NAME);
+    persist_delete(PERSIST_NEXT_MOVE_TIME_KEY);
+    persist_delete(PERSIST_NEXT_MOVE_TYPE_KEY);
+    persist_delete(PERSIST_NEXT_MOVE_KEY);
+}
+/*
 * Keeps track of the main workout timer
 * Called every one second when a timer is running
 *
@@ -383,7 +396,8 @@ void pause_click_handler(ClickRecognizerRef recognizer, void *context) {
 void stop_click_handler(ClickRecognizerRef recognizer, void *context) { 
     APP_LOG(APP_LOG_LEVEL_DEBUG,"Stop Button clicked");
     paused = false; 
-    persist_delete(PERSIST_PAUSE_KEY); 
+    deleteKeys(); 
+
     app_timer_cancel(timer);
     
   wakeup_cancel(s_wakeup_id); 
@@ -471,25 +485,29 @@ void timer_window_init(){
       Layer *timer_window_layer = window_get_root_layer(timer_window);
 
     GRect bounds = layer_get_frame(timer_window_layer);
+    int STATUS_BAR_OFFSET = 0; 
+    #ifdef PBL_COLOR
+      STATUS_BAR_OFFSET = STATUS_BAR_LAYER_HEIGHT;
+    #endif
 
-    title_text = text_layer_create(GRect(0, 16, bounds.size.w - ACTION_BAR_WIDTH, 57 /* height */));
+    title_text = text_layer_create(GRect(0, bounds.origin.y + STATUS_BAR_OFFSET, bounds.size.w - ACTION_BAR_WIDTH, 57 /* height */));
     text_layer_set_font(title_text, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));    
     text_layer_set_text_alignment(title_text, GTextAlignmentCenter);
     text_layer_set_overflow_mode(title_text, GTextOverflowModeWordWrap);
     layer_add_child(timer_window_layer, text_layer_get_layer(title_text));
 
-    timer_text = text_layer_create(GRect(0, 62, bounds.size.w - ACTION_BAR_WIDTH, 42 /* height */));
+    timer_text = text_layer_create(GRect(0, bounds.origin.y + 46 + STATUS_BAR_OFFSET, bounds.size.w - ACTION_BAR_WIDTH, 42 /* height */));
     text_layer_set_font(timer_text, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
     text_layer_set_text_alignment(timer_text, GTextAlignmentCenter);
     layer_add_child(timer_window_layer, text_layer_get_layer(timer_text));
   
-    next_move_text = text_layer_create(GRect(0, 124, bounds.size.w - ACTION_BAR_WIDTH/* width */, 23 /* height */));
+    next_move_text = text_layer_create(GRect(0, bounds.origin.y + 108 + STATUS_BAR_OFFSET, bounds.size.w - ACTION_BAR_WIDTH/* width */, 23 /* height */));
     text_layer_set_font(next_move_text, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
     text_layer_set_overflow_mode(next_move_text, GTextOverflowModeTrailingEllipsis);
     text_layer_set_text_alignment(next_move_text, GTextAlignmentCenter);
     layer_add_child(timer_window_layer, text_layer_get_layer(next_move_text));
   
-    paused_text = text_layer_create(GRect(0, 143, bounds.size.w - ACTION_BAR_WIDTH, 42 /* height */));
+    paused_text = text_layer_create(GRect(0, bounds.origin.y + 127 + STATUS_BAR_OFFSET, bounds.size.w - ACTION_BAR_WIDTH, 42 /* height */));
     text_layer_set_font(paused_text, fonts_get_system_font(FONT_KEY_ROBOTO_CONDENSED_21));
     text_layer_set_text_alignment(paused_text, GTextAlignmentCenter);
     layer_add_child(timer_window_layer, text_layer_get_layer(paused_text));
@@ -534,15 +552,21 @@ void createTimer(char* name, char* time, int reps, int getNext) {
     //Adjust Layout to fit name
     Layer *timer_window_layer = window_get_root_layer(timer_window);
     GRect bounds = layer_get_frame(timer_window_layer);
+    int STATUS_BAR_OFFSET = 0; 
+    #ifdef PBL_COLOR
+      STATUS_BAR_OFFSET = STATUS_BAR_LAYER_HEIGHT;
+    #endif
+          APP_LOG(APP_LOG_LEVEL_DEBUG,"Status Bar offset: %i",STATUS_BAR_OFFSET);
+
     text_layer_set_font(title_text, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));    
     if (strlen(name) > 10) { 
-      layer_set_frame(text_layer_get_layer(timer_text), GRect(0, 78, bounds.size.w - ACTION_BAR_WIDTH, 42 /* height */))  ;
+      layer_set_frame(text_layer_get_layer(timer_text), GRect(0,bounds.origin.y + 62 + STATUS_BAR_OFFSET, bounds.size.w - ACTION_BAR_WIDTH, 42 /* height */))  ;
       if (strlen(name) > 18) {
         text_layer_set_font(title_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD)); 
-        layer_set_frame(text_layer_get_layer(timer_text), GRect(0, 65, bounds.size.w - ACTION_BAR_WIDTH, 42 /* height */))  ; 
+        layer_set_frame(text_layer_get_layer(timer_text), GRect(0, bounds.origin.y +  49 + STATUS_BAR_OFFSET, bounds.size.w - ACTION_BAR_WIDTH, 42 /* height */))  ; 
       }
     }     
-    else  layer_set_frame(text_layer_get_layer(timer_text), GRect(0, 62, bounds.size.w - ACTION_BAR_WIDTH, 42 /* height */))  ; 
+    else  layer_set_frame(text_layer_get_layer(timer_text), GRect(0, bounds.origin.y +  46 + STATUS_BAR_OFFSET, bounds.size.w - ACTION_BAR_WIDTH, 42 /* height */))  ; 
     
     window_stack_remove(timer_window, false); 
   
@@ -977,7 +1001,7 @@ void finishWorkout(){
     window_stack_remove(loading_window, false);
     window_stack_pop_all(false);
     window_stack_push(window, false); 
-
+    deleteKeys(); 
     showEndCard();      
     vibes_double_pulse(); 
 }
