@@ -1,7 +1,7 @@
-//Custom Workout Timer for Pebble. v 3.0
+//Custom Workout Timer for Pebble. v 3.1
 //By Fernando Trujano
 //    trujano@mit.edu
-// 04/29/2015
+// 05/05/2015
 
 #include "pebble.h"
 #include<stdlib.h>
@@ -290,6 +290,9 @@ void window_load(Window *window) {
   // Bind the menu layer's click config provider to the window for interactivity
   menu_layer_set_click_config_onto_window(menu_layer, window);
 
+  #ifdef PBL_COLOR
+    menu_layer_set_highlight_colors(menu_layer,GColorCobaltBlue ,GColorWhite );
+  #endif
   // Add it to the window for display
   layer_add_child(window_layer, menu_layer_get_layer(menu_layer));
 }
@@ -309,6 +312,11 @@ void loading_window_load(Window *loading_window){
     text_layer_set_font(loading_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
     text_layer_set_text_alignment(loading_text, GTextAlignmentCenter);
     layer_add_child(loading_window_layer, text_layer_get_layer(loading_text));
+  
+   #ifdef PBL_COLOR
+    window_set_background_color(loading_window,GColorRed );
+    text_layer_set_background_color(loading_text, GColorRed );
+   #endif
 }
 
 void loading_window_unload(Window *loading_window){ 
@@ -449,6 +457,7 @@ static GBitmap *playPauseButton;
 static GBitmap *nextButton;
 #ifdef PBL_PLATFORM_APLITE 
   InverterLayer * inverterLayer; 
+
 #endif
 
 void timer_window_init(){ 
@@ -463,28 +472,29 @@ void timer_window_init(){
 
     GRect bounds = layer_get_frame(timer_window_layer);
 
-    title_text = text_layer_create(GRect(0, 10, bounds.size.w /* width */, 60 /* height */));
-  
-    text_layer_set_font(title_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));    
-
+    title_text = text_layer_create(GRect(0, 16, bounds.size.w - ACTION_BAR_WIDTH, 57 /* height */));
+    text_layer_set_font(title_text, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));    
     text_layer_set_text_alignment(title_text, GTextAlignmentCenter);
     text_layer_set_overflow_mode(title_text, GTextOverflowModeWordWrap);
     layer_add_child(timer_window_layer, text_layer_get_layer(title_text));
 
-    timer_text = text_layer_create(GRect(0, 60, bounds.size.w /* width */, 30 /* height */));
-    text_layer_set_font(timer_text, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
+    timer_text = text_layer_create(GRect(0, 62, bounds.size.w - ACTION_BAR_WIDTH, 42 /* height */));
+    text_layer_set_font(timer_text, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
     text_layer_set_text_alignment(timer_text, GTextAlignmentCenter);
     layer_add_child(timer_window_layer, text_layer_get_layer(timer_text));
   
-    paused_text = text_layer_create(GRect(0, 120, bounds.size.w /* width */, 30 /* height */));
-    text_layer_set_font(paused_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+    next_move_text = text_layer_create(GRect(0, 124, bounds.size.w - ACTION_BAR_WIDTH/* width */, 23 /* height */));
+    text_layer_set_font(next_move_text, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
+    text_layer_set_overflow_mode(next_move_text, GTextOverflowModeTrailingEllipsis);
+    text_layer_set_text_alignment(next_move_text, GTextAlignmentCenter);
+    layer_add_child(timer_window_layer, text_layer_get_layer(next_move_text));
+  
+    paused_text = text_layer_create(GRect(0, 143, bounds.size.w - ACTION_BAR_WIDTH, 42 /* height */));
+    text_layer_set_font(paused_text, fonts_get_system_font(FONT_KEY_ROBOTO_CONDENSED_21));
     text_layer_set_text_alignment(paused_text, GTextAlignmentCenter);
     layer_add_child(timer_window_layer, text_layer_get_layer(paused_text));
   
-    next_move_text = text_layer_create(GRect(0, 100, bounds.size.w /* width */, 30 /* height */));
-    text_layer_set_font(next_move_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
-    text_layer_set_text_alignment(next_move_text, GTextAlignmentCenter);
-    layer_add_child(timer_window_layer, text_layer_get_layer(next_move_text));
+ 
   
     action_bar = action_bar_layer_create(); 
     action_bar_layer_add_to_window(action_bar, timer_window);
@@ -498,6 +508,9 @@ void timer_window_init(){
   #ifdef PBL_PLATFORM_APLITE 
     inverterLayer =  inverter_layer_create(bounds);
     layer_add_child(timer_window_layer, inverter_layer_get_layer(inverterLayer));
+  #else
+    StatusBarLayer * status_bar = status_bar_layer_create();
+    layer_add_child(timer_window_layer, status_bar_layer_get_layer(status_bar));
   #endif
 
 }
@@ -515,15 +528,27 @@ void createTimer(char* name, char* time, int reps, int getNext) {
 
    strcpy(nameCopy, name);
     name = nameCopy;
-      APP_LOG(APP_LOG_LEVEL_DEBUG,"NAME: %s",nameCopy);
+    APP_LOG(APP_LOG_LEVEL_DEBUG,"NAME: %s",nameCopy);
     APP_LOG(APP_LOG_LEVEL_DEBUG,"Creating Timer with name: %s and time: %s",name, time);
   
+    //Adjust Layout to fit name
+    Layer *timer_window_layer = window_get_root_layer(timer_window);
+    GRect bounds = layer_get_frame(timer_window_layer);
+    text_layer_set_font(title_text, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));    
+    if (strlen(name) > 10) { 
+      layer_set_frame(text_layer_get_layer(timer_text), GRect(0, 78, bounds.size.w - ACTION_BAR_WIDTH, 42 /* height */))  ;
+      if (strlen(name) > 18) {
+        text_layer_set_font(title_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD)); 
+        layer_set_frame(text_layer_get_layer(timer_text), GRect(0, 65, bounds.size.w - ACTION_BAR_WIDTH, 42 /* height */))  ; 
+      }
+    }     
+    else  layer_set_frame(text_layer_get_layer(timer_text), GRect(0, 62, bounds.size.w - ACTION_BAR_WIDTH, 42 /* height */))  ; 
+    
     window_stack_remove(timer_window, false); 
   
     window_stack_remove(loading_window, false); 
   
     window_stack_push(timer_window, true);
-    Layer *timer_window_layer = window_get_root_layer(timer_window);
 
     text_layer_set_text(title_text, name);
     text_layer_set_text(timer_text, "");
@@ -541,6 +566,21 @@ void createTimer(char* name, char* time, int reps, int getNext) {
         //Set ActionBar
       #ifdef PBL_PLATFORM_APLITE 
         layer_set_hidden(inverter_layer_get_layer(inverterLayer), true); 
+ 
+      #else
+          window_set_background_color(timer_window, GColorWhite);
+          text_layer_set_text_color(timer_text, GColorBlack);
+          text_layer_set_background_color(timer_text, GColorWhite);
+
+          text_layer_set_text_color(paused_text, GColorBlack);
+          text_layer_set_background_color(paused_text, GColorWhite);
+
+          text_layer_set_text_color(next_move_text, GColorBlack);
+          text_layer_set_background_color(next_move_text, GColorWhite);
+
+          text_layer_set_text_color(title_text, GColorBlack);
+          text_layer_set_background_color(title_text, GColorWhite);
+     
       #endif
         action_bar_layer_set_click_config_provider(action_bar, timerwindow_click_config_provider);
         action_bar_layer_set_icon(action_bar, BUTTON_ID_SELECT, playPauseButton);
@@ -565,6 +605,21 @@ void createReps(char* name, char* reps) {
   
     #ifdef PBL_PLATFORM_APLITE 
       layer_set_hidden(inverter_layer_get_layer(inverterLayer), false);
+    #else
+      window_set_background_color(timer_window, GColorBlack);
+      text_layer_set_text_color(timer_text, GColorWhite);
+      text_layer_set_background_color(timer_text, GColorBlack);
+
+      text_layer_set_text_color(paused_text, GColorWhite);
+      text_layer_set_background_color(paused_text, GColorBlack);
+
+      text_layer_set_text_color(next_move_text, GColorWhite);
+      text_layer_set_background_color(next_move_text, GColorBlack);
+
+      text_layer_set_text_color(title_text, GColorWhite);
+      text_layer_set_background_color(title_text, GColorBlack);
+  
+      action_bar_layer_set_background_color(action_bar, GColorBlack); 
     #endif
 
     action_bar_layer_set_click_config_provider(action_bar, repwindow_click_config_provider);
@@ -942,6 +997,11 @@ void showInstructions(){
     text_layer_set_font(ins_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
     text_layer_set_text_alignment(ins_text, GTextAlignmentLeft);
     layer_add_child(ins_window_layer, text_layer_get_layer(ins_text)); 
+   #ifdef PBL_COLOR
+    window_set_background_color(ins_window,GColorElectricBlue   );
+    text_layer_set_background_color(ins_text, GColorElectricBlue  );
+   #endif
+  
 }
 
 /*
@@ -955,17 +1015,28 @@ void showEndCard(){
     window_stack_push(end_window, true);
     Layer *end_window_layer = window_get_root_layer(end_window);
     GRect bounds = layer_get_frame(end_window_layer);
+  
+
 
     end_text = text_layer_create(GRect(0, 10, bounds.size.w /* width */, 28 /* height */));
     text_layer_set_text(end_text, "Congratulations!");
-    text_layer_set_font(end_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+    text_layer_set_font(end_text, fonts_get_system_font(FONT_KEY_ROBOTO_CONDENSED_21));
     text_layer_set_text_alignment(end_text, GTextAlignmentCenter);
     layer_add_child(end_window_layer, text_layer_get_layer(end_text));
 
-    end2_text = text_layer_create(GRect(0, 60, bounds.size.w /* width */, 30 /* height */));
-    text_layer_set_text(end2_text, "Workout Finished");
-    text_layer_set_font(end2_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+    end2_text = text_layer_create(GRect(0, 50, bounds.size.w /* width */, 95 /* height */));
+    text_layer_set_text(end2_text, "Workout Finished :)");
+    text_layer_set_font(end2_text, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
     text_layer_set_text_alignment(end2_text, GTextAlignmentCenter);
+  
+  
+  
+  #ifdef PBL_COLOR
+    window_set_background_color(end_window,GColorGreen);
+    text_layer_set_background_color(end_text, GColorGreen);
+    text_layer_set_background_color(end2_text, GColorGreen);
+  #endif
+    
     layer_add_child(end_window_layer, text_layer_get_layer(end2_text));
 }
 

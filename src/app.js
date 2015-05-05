@@ -1,8 +1,8 @@
 //Pebble JS Component of timer. 
 //By Fernando Trujano
 //    trujano@mit.edu
-// 04/29/2015
-var version = "3.0";
+// 05/05/2015
+var version = "3.1";
 //Sends workouts to watch app using Pebble.sendAppMesssage
 
 var counter = 0; 
