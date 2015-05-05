@@ -105,6 +105,18 @@ static void jsReadyTimer_callback(void *data){
   
 }
 
+void sent_message_callback(DictionaryIterator *iterator, void *context){ 
+    APP_LOG(APP_LOG_LEVEL_DEBUG,"Message actually sent");
+}
+
+void failed_message_callback(DictionaryIterator *iterator, AppMessageResult reason,  void *context){ 
+    APP_LOG(APP_LOG_LEVEL_DEBUG,"Message failed to send! %i ", reason);
+}
+
+void dropped_message_callback(AppMessageResult reason,  void *context){ 
+    APP_LOG(APP_LOG_LEVEL_DEBUG,"Message dropped!:  %i ", reason);
+}
+
 /*
 * Sends a message to the phone. Does not send the message until phone is ready to recieve.
 * @param type Type of message being sent
@@ -120,20 +132,37 @@ void sendMessage(int type, char* message) {
     strcpy(data, strType);
     strcat(data, ","); 
     strcat(data, message);  //Put data in "type,message" format
-    
+  
     jsReadyTimer = app_timer_register(1 /* milliseconds */ , jsReadyTimer_callback, data);  
   }
   
  else {  
-    APP_LOG(APP_LOG_LEVEL_DEBUG,"Sending message... %s %i", message, type);
-
-    DictionaryIterator *iter;
-   	app_message_outbox_begin(&iter);
-   	dict_write_cstring(iter, type, message);
-   	app_message_outbox_send();
-    APP_LOG(APP_LOG_LEVEL_DEBUG,"Message \"%s\" sent to phone", message);
+   APP_LOG(APP_LOG_LEVEL_DEBUG,"Sending message... %s %i", message, type);
+   app_message_register_outbox_sent(sent_message_callback);
+   app_message_register_outbox_failed(failed_message_callback);
+   app_message_register_inbox_dropped(dropped_message_callback); 
+   DictionaryIterator *iter;
+   app_message_outbox_begin(&iter);
+   dict_write_cstring(iter, type, message);
+   int result = app_message_outbox_send();
+   switch (result){ 
+      case APP_MSG_OK:  
+        APP_LOG(APP_LOG_LEVEL_DEBUG,"OK");
+        APP_LOG(APP_LOG_LEVEL_DEBUG,"Message \"%s\" of type %i sent to phone", message, type);
+        break; 
+      case APP_MSG_BUSY:  //There are pending messages (in or out) that need to be processed first, try resending in a bit
+        APP_LOG(APP_LOG_LEVEL_DEBUG,"BUSY");
+        char strType[2]; 
+        snprintf(strType,10, "%d", type); 
+        strcpy(data, strType);
+        strcat(data, ","); 
+        strcat(data, message);  //Put data in "type,message" format
+        jsReadyTimer = app_timer_register(100 , jsReadyTimer_callback, data);  
+      break; 
+   }
  }
 }
+
 
 /*
 * Clears all workouts and perist keys from Pebble's Internal Memory. 
@@ -418,7 +447,9 @@ ActionBarLayer *action_bar;
 static GBitmap *stopButton;
 static GBitmap *playPauseButton;
 static GBitmap *nextButton;
- InverterLayer * inverterLayer; 
+#ifdef PBL_PLATFORM_APLITE 
+  InverterLayer * inverterLayer; 
+#endif
 
 void timer_window_init(){ 
 
@@ -464,9 +495,10 @@ void timer_window_init(){
     action_bar_layer_set_icon(action_bar, BUTTON_ID_UP, stopButton);
     action_bar_layer_set_icon(action_bar, BUTTON_ID_DOWN, nextButton);
 
-  
+  #ifdef PBL_PLATFORM_APLITE 
     inverterLayer =  inverter_layer_create(bounds);
     layer_add_child(timer_window_layer, inverter_layer_get_layer(inverterLayer));
+  #endif
 
 }
 
@@ -507,7 +539,9 @@ void createTimer(char* name, char* time, int reps, int getNext) {
   
     else { 
         //Set ActionBar
+      #ifdef PBL_PLATFORM_APLITE 
         layer_set_hidden(inverter_layer_get_layer(inverterLayer), true); 
+      #endif
         action_bar_layer_set_click_config_provider(action_bar, timerwindow_click_config_provider);
         action_bar_layer_set_icon(action_bar, BUTTON_ID_SELECT, playPauseButton);
 
@@ -528,7 +562,10 @@ void createReps(char* name, char* reps) {
     APP_LOG(APP_LOG_LEVEL_DEBUG,"Creating Reps with name: %s and reps: %s",name, reps);
     text_layer_set_text(timer_text, reps);
     text_layer_set_text(paused_text, "Rep Mode"); 
-    layer_set_hidden(inverter_layer_get_layer(inverterLayer), false);
+  
+    #ifdef PBL_PLATFORM_APLITE 
+      layer_set_hidden(inverter_layer_get_layer(inverterLayer), false);
+    #endif
 
     action_bar_layer_set_click_config_provider(action_bar, repwindow_click_config_provider);
     action_bar_layer_set_icon(action_bar, BUTTON_ID_SELECT, NULL);

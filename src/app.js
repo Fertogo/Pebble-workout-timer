@@ -115,6 +115,7 @@ function startNewWorkout(workoutName){
 //Recieve message from Pebble
 Pebble.addEventListener("appmessage",
   function(e) {
+    console.log("Recieved something on phone---")
     for (var type in e.payload){
           console.log("Received message: " + e.payload[type] + " of type: " + type);       
     }

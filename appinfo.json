@@ -36,8 +36,12 @@
             }
         ]
     },
-    "sdkVersion": "2",
+    "sdkVersion": "3",
     "shortName": "Workout Timer",
+    "targetPlatforms": [
+        "aplite",
+        "basalt"
+    ],
     "uuid": "2add7054-08bc-4dda-b4d8-28f22f3d7ec2",
     "versionCode": 1,
     "versionLabel": "3.0",
