@@ -3,13 +3,26 @@ Pebble-workout-timer
 ![Banner](http://i.imgur.com/jvBNU81.png)
 
 ##Description
-Easily create custom interval timers (with names) for your workouts. 
-This app will time you and alert you when to change moves based on your own workout program. Example: Plank for 2 minutes, pushups for 45 seconds... etc. 
+Easily create custom interval timers (with names) for your workouts.  This app will time you and alert you when to change moves based on your own workout program. Example: Plank for 2 minutes, 10 biceps curls, pushups for 45 seconds... etc.   You can add create workouts and add moves from your phone or your computer. 
+
+Moves can be time (plank for 1 minute) or rep based (10 pullups). In a time move, you set the length and Pebble will advance to the next move when the countdown timer ends. On a rep move, you can manually advance when you are done with a set/rep. Pebble will advance when you've done all the reps.
 
 After installing, locate this app on the phone's Pebble app, then click on the settings icon. You can add workouts and moves from there. 
 
 
 ###Changelog
+* **v3.1**
+
+  * Pebble Time Compatibility 
+    * App now works with Pebble Time and makes use of color screen for various windows. 
+  * Updated Layout
+    * Move Name and Time larger and centered
+    * Move Name font and size changes to accommodate larger moves
+  * Bug Fixes
+    * Fix bug where text would get cut off by status bar
+    * Fix bug that would cause workouts to get stuck on loading after second move. 
+    * Miscellaneous bug fixes
+ 
 * **v3.0**
 ##### This update changes the way workouts are stored. See README and `migrate-workouts.py`
 
@@ -58,7 +71,7 @@ After installing, locate this app on the phone's Pebble app, then click on the s
 * **v1.0**
   * Initial Release - Custom workout interval timer
   * Add workouts from phone
-  * Delete workouts from Pebble (removed in v2.0)
+  * ~~Delete workouts from Pebble~~ (removed in v2.0)
   * Start timers from Pebble
 
 ###Code
@@ -76,7 +89,7 @@ The online workout manager creates a json file with an array of workouts. Format
                 },
                 {
                   "name" : "Move 2", 
-                  "value" : 5, //secs
+                  "value" : 5, //reps
                   "type" : "reps"
                 }
             ]
