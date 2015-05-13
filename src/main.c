@@ -556,14 +556,15 @@ void createTimer(char* name, char* time, int reps, int getNext) {
     #ifdef PBL_COLOR
       STATUS_BAR_OFFSET = STATUS_BAR_LAYER_HEIGHT;
     #endif
-          APP_LOG(APP_LOG_LEVEL_DEBUG,"Status Bar offset: %i",STATUS_BAR_OFFSET);
 
-    text_layer_set_font(title_text, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));    
-    if (strlen(name) > 10) { 
-      layer_set_frame(text_layer_get_layer(timer_text), GRect(0,bounds.origin.y + 62 + STATUS_BAR_OFFSET, bounds.size.w - ACTION_BAR_WIDTH, 42 /* height */))  ;
-      if (strlen(name) > 18) {
+    text_layer_set_font(title_text, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD)); 
+    int font_size = 28; 
+
+    if (text_layer_get_content_size(title_text).h > font_size) { //Name takes more than one line
+      layer_set_frame(text_layer_get_layer(timer_text), GRect(0,bounds.origin.y + 57 + STATUS_BAR_OFFSET, bounds.size.w - ACTION_BAR_WIDTH, 42 /* height */))  ;
+      if (text_layer_get_content_size(title_text).h > 2 * font_size) {
         text_layer_set_font(title_text, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD)); 
-        layer_set_frame(text_layer_get_layer(timer_text), GRect(0, bounds.origin.y +  49 + STATUS_BAR_OFFSET, bounds.size.w - ACTION_BAR_WIDTH, 42 /* height */))  ; 
+        layer_set_frame(text_layer_get_layer(timer_text), GRect(0, bounds.origin.y +  54 + STATUS_BAR_OFFSET, bounds.size.w - ACTION_BAR_WIDTH, 42 /* height */))  ; 
       }
     }     
     else  layer_set_frame(text_layer_get_layer(timer_text), GRect(0, bounds.origin.y +  46 + STATUS_BAR_OFFSET, bounds.size.w - ACTION_BAR_WIDTH, 42 /* height */))  ; 
