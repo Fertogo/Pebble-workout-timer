@@ -16,6 +16,7 @@
 
             <div data-role="content">
                 <div class="error" id="update" hidden><strong> There is an update for this app available on the Pebble appstore. <a href="pebble://appstore/53b8f8d4c09b06bcc7000007"> Click here to update! </a>   </strong> </div>
+                <div class="success" id="heart" hidden > Like this app? Please give it a &hearts; on the <a href="pebble://appstore/53b8f8d4c09b06bcc7000007"> App Store. </a> This will encourage me to keep developing new features! </div>
                 <h2>Manage Workouts <a href="#info" data-transition="flip"><button data-inline="true" data-mini="true" data-icon="info"> FAQ </button></a></h2>
                 <div id="loading" class="info">Loading your workouts, please wait. </div>
                 <div data-role="collapsibleset" data-content-theme="a" data-iconpos="left" data-collapsed-icon="carat-d" data-expanded-icon="carat-u" id="workout-list">
@@ -57,7 +58,7 @@
                     <li> Who are you?
                         <p> Hi, I am <a href="http://www.fernandotrujano.com"> Fernando Trujano </a>, a happy Pebble owner and college sophomore. If you like this app please give it a "heart" on the Pebble appstore.I smile everytime I see the count go up :)  </p>  </li>
                     <li> Can I buy you a beer?
-                        <p> Not legally, at least not until next year. In the meantime if you would like to support my work you can donate using Paypal. </p>
+                        <p> Not legally, at least not until next year. In the meantime if you would like to support my work you can donate using Paypal below or with a credit/debit card using <a href="https://cash.me/$trujano"> Square Cash. </a>   </p>
                         <form style="text-align:center" action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
                             <input type="hidden" name="cmd" value="_s-xclick">
                             <input type="hidden" name="encrypted" value="-----BEGIN PKCS7-----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-----END PKCS7-----
@@ -156,6 +157,11 @@
 
     <script src="add-workout.js"></script>
     <script src="edit-workout.js"></script>
+    <script src="slip.js"></script>
+    <script>
+
+    </script>
+
     <script src="main.js"></script>
 
 </html>

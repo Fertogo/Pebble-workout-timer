@@ -23,6 +23,8 @@ function populateHTML() {
             var workout_title = workout.title.replace(/\s/g, '-');
             var jQuerySelectorsRe = new RegExp('[\\[!"#$%&\'()*+,.:;<=>?@^`{|}~\\]]',"g");
             var workout_selector = workout_title.replace(jQuerySelectorsRe, "\\$&");
+            // var workout_selector = workout_title.replace(jQuerySelectorsRe, "-");
+
             var workoutHasReps = false;
 
             $.each(workout.moves, function(j, move){ maintotaltime += (move.type == "reps" ? 0 :parseInt(move.value)); if (move.type == "reps") workoutHasReps = true;  }); //Please optimize
@@ -40,7 +42,60 @@ function populateHTML() {
         $('#workout-list').collapsibleset().collapsibleset('refresh');//.trigger('create'); ;
 
         $('.move-list').listview().listview('refresh').trigger('create');
+
+
+        initMoveList();
 }
+
+function initMoveList(){
+    var workoutList = document.getElementById('workout-list');
+
+    workoutList.addEventListener('slip:beforereorder', function(e){
+        if (/editlink/.test(e.target.className)) e.preventDefault(); // Don't reorder moves
+        if (/demo-no-reorder/.test(e.target.className)) {
+            e.preventDefault();
+        }
+        else {
+            console.log(e)
+            $(e.target.parentElement.parentElement).collapsible("collapse")
+        }
+    }, false);
+
+    workoutList.addEventListener('slip:beforeswipe', function(e){
+       // if (e.target.nodeName == 'INPUT' || /demo-no-swipe/.test(e.target.className)) {
+            e.preventDefault();
+       // }
+    }, false);
+
+    workoutList.addEventListener('slip:beforewait', function(e){
+        console.log("click");
+        console.log(e)
+
+        if (e.target.className.indexOf('instant') > -1) e.preventDefault();
+    }, false);
+
+    workoutList.addEventListener('slip:afterswipe', function(e){
+        e.target.parentNode.appendChild(e.target);
+    }, false);
+
+    workoutList.addEventListener('slip:reorder', function(e){
+        e.target.parentNode.insertBefore(e.target, e.detail.insertBefore);
+        console.log("Move from " + e.detail.originalIndex + " to " + e.detail.spliceIndex);
+        json.workouts.move(e.detail.originalIndex, e.detail.spliceIndex);
+        return false;
+    }, false);
+
+    workoutList.addEventListener('slip:swipe', function(e){
+        return false;
+    }, false);
+
+    new Slip(workoutList);
+
+}
+
+Array.prototype.move = function(from, to) {
+    this.splice(to, 0, this.splice(from, 1)[0]);
+};
 
 var json = {};
 
@@ -54,7 +109,17 @@ $(document).ready(function(){
     var version = urlinfo[1];
     var jsonstring = false;
 
-    if (version != "2.7") $("#update").show();
+    if (version != "3.0" && version != "3.1") {
+        $("#update").show();
+        if (confirm("New Version available. You must update to v3.0 to continue. iOS only: v3.0 will come out in a couple of weeks! ")){
+            document.location = "https://apps.getpebble.com/applications/53b8f8d4c09b06bcc7000007";
+        }
+        else {
+            document.location = "pebblejs://close#"
+            document.location = "https://apps.getpebble.com/applications/53b8f8d4c09b06bcc7000007";
+        }
+    }
+    else $("#heart").show();
 
     //Initialize Popup
     $( "#edit-popup" ).enhanceWithin().popup();
@@ -68,7 +133,6 @@ $(document).ready(function(){
             jsonstring = response.responseText.replace(/\\"/g, '"'); //Unescape escaped ""
             json = $.parseJSON(jsonstring);
             $("#loading").hide();
-            //Populate HTML
             populateHTML();
         }
       },
