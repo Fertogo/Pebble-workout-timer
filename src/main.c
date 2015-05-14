@@ -354,15 +354,18 @@ static void timer_callback(void *data) {
 //      APP_LOG(APP_LOG_LEVEL_DEBUG,"Restore?: %d", needRestore);
     //if (persist_exists(PERSIST_KEY_WAKEUP_ID))   APP_LOG(APP_LOG_LEVEL_DEBUG,"WAKEUP WILL HAPPEN");
 
-    if (timer_time==0) { 
+    if (timer_time<=0) { 
       advanceToNextMove(); 
-      //vibes_long_pulse(); //Vibrate Pebble 
-      vibes_short_pulse();
+      vibes_short_pulse(); //Vibrate Pebble 
     } 
     else { 
       timer_time--;    
       //Convert int to string 
-      snprintf(time_str, 10, "%d", timer_time);
+      int secs = timer_time % 60; 
+      int mins = (int)(timer_time - secs)/60 ; 
+      if (mins <= 0 )snprintf(time_str, 10, "%i", secs);
+      else snprintf(time_str, 10, "%i:%02i", mins, secs);
+
       text_layer_set_text(timer_text, time_str); //Update the time
       APP_LOG(APP_LOG_LEVEL_DEBUG,"Time left: %s",time_str);
       //APP_LOG(APP_LOG_LEVEL_DEBUG,"One Second!");
@@ -418,7 +421,9 @@ void timer_back_click_handler(ClickRecognizerRef recognizer, void *context){
   APP_LOG(APP_LOG_LEVEL_DEBUG,"Back Button clicked");
 
   window_stack_pop(true); 
-  time_t future_time = time(NULL) + atoi(text_layer_get_text(timer_text));
+ // time_t future_time = time(NULL) + atoi(text_layer_get_text(timer_text));
+  time_t future_time = time(NULL) + timer_time;
+
   s_wakeup_id = wakeup_schedule(future_time, 0, true); //Create Wakeup Timer
   persist_write_int(PERSIST_KEY_WAKEUP_ID, s_wakeup_id); // Save wakeup id! 
   persist_write_string( PERSIST_KEY_WAKEUP_NAME, text_layer_get_text(title_text));  //Save move name  
@@ -431,7 +436,7 @@ void rep_back_click_handler(ClickRecognizerRef recognizer, void *context){
   window_stack_pop(true);
   persist_write_string( PERSIST_KEY_WAKEUP_NAME, text_layer_get_text(title_text));  //Save move name  
   persist_write_string( PERSIST_KEY_WAKEUP_TYPE, "reps"); 
-  persist_write_string( PERSIST_KEY_WAKEUP_VALUE, text_layer_get_text(timer_text));  //Save move name  
+  persist_write_string( PERSIST_KEY_WAKEUP_VALUE, text_layer_get_text(timer_text));  
 
 }
 
