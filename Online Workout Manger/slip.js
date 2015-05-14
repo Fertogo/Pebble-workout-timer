@@ -226,6 +226,7 @@ window['Slip'] = (function(){
                         var move = this.getAbsoluteMovement();
                         if (this.canPreventScrolling && move.x < 15 && move.y < 25) {
                             if (this.dispatch(this.target.originalTarget, 'beforereorder')) {
+                                console.log(this.target)
                                 this.setState(this.states.reorder);
                             }
                         }
@@ -345,12 +346,14 @@ window['Slip'] = (function(){
                 this.target.height = this.target.node.offsetHeight;
 
                 var nodes = this.container.childNodes;
+                console.log(nodes)
                 var originalIndex = findIndex(this.target, nodes);
                 var mouseOutsideTimer;
                 var zero = this.target.node.offsetTop + this.target.height/2;
                 var otherNodes = [];
                 for(var i=0; i < nodes.length; i++) {
                     if (nodes[i].nodeType != 1 || nodes[i] === this.target.node) continue;
+                    if (/ui-li-static/.test(nodes[i].className)) continue
                     var t = nodes[i].offsetTop;
                     nodes[i].style[transitionPrefix] = transformProperty + ' 0.2s ease-in-out';
                     otherNodes.push({
@@ -432,6 +435,7 @@ window['Slip'] = (function(){
                         var move = this.getTotalMovement();
                         if (move.y < 0) {
                             for(var i=0; i < otherNodes.length; i++) {
+
                                 if (otherNodes[i].pos > move.y) {
                                     this.dispatch(this.target.node, 'reorder', {spliceIndex:i, insertBefore:otherNodes[i].node, originalIndex: originalIndex});
                                     break;
@@ -439,6 +443,7 @@ window['Slip'] = (function(){
                             }
                         } else {
                             for(var i=otherNodes.length-1; i >= 0; i--) {
+
                                 if (otherNodes[i].pos < move.y) {
                                     this.dispatch(this.target.node, 'reorder', {spliceIndex:i+1, insertBefore:otherNodes[i+1] ? otherNodes[i+1].node : null, originalIndex: originalIndex});
                                     break;

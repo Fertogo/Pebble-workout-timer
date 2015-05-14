@@ -8,7 +8,6 @@ $(document).ready(function(){
     };
 
     $(document).on('click', '.editlink', function(){
-
         $("#edit-delete-btn").show();
         $( "#edit-popup" ).enhanceWithin().popup();
         $("#popup-text").html('<small> Edit Move </small> ');
@@ -74,7 +73,7 @@ $(document).ready(function(){
         console.log(title);
         var mins = $("#edit-minute-slider").val();
         var secs = $("#edit-second-slider").val();
-        var move = json.workouts[id[0]].moves[id[1]];
+        var move = json.workouts[id[0]].moves[id[1]] || {"type": "time", "value" : 0, "name" : ""};
 
         if (move.type == "reps"){ //TODO DRY
             if (secs <= 0 || title == "") {
@@ -84,7 +83,7 @@ $(document).ready(function(){
             move.name = title;
             move.value = secs;
             console.log("Edited");
-            populateHTML();
+            populateHTML(id[0]);
             console.log(id);
             $("#popup-error").fadeOut();
             $("#edit-popup").popup('close');
@@ -96,8 +95,9 @@ $(document).ready(function(){
                 move.name = title;
                 move.value = time;
 
+                if (!json.workouts[id[0]].moves[id[1]]) json.workouts[id[0]].moves.push(move)
                 console.log("Edited");
-                populateHTML();
+                populateHTML(id[0]);
                 console.log(id);
                 $("#popup-error").fadeOut();
                 $("#edit-popup").popup('close');

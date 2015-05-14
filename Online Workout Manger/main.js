@@ -15,7 +15,7 @@ function timeText(time){
     return "Error";
 }
 
-function populateHTML() {
+function populateHTML(index) {
 
     $("#workout-list").html(''); //Reset div. Yes, I am redrawing everytime, could be optimized.
     $.each(json.workouts, function(i, workout) {  //Add workouts
@@ -28,7 +28,7 @@ function populateHTML() {
             var workoutHasReps = false;
 
             $.each(workout.moves, function(j, move){ maintotaltime += (move.type == "reps" ? 0 :parseInt(move.value)); if (move.type == "reps") workoutHasReps = true;  }); //Please optimize
-            $("#workout-list").append('<div data-role="collapsible" id="workoutcollapsible" > <h4>'+ workout.title + ' <span class="totaltime" style="float:right" id="total-time">'+ timeText(maintotaltime) + (workoutHasReps ? " + reps" : "")+' </span>  </h4> <ul class="move-list" id="' + workout_title+'" data-role="listview">');
+            $("#workout-list").append('<div data-role="collapsible" id="workoutcollapsible' + i + '" > <h4>'+ workout.title + ' <span class="totaltime" style="float:right" id="total-time">'+ timeText(maintotaltime) + (workoutHasReps ? " + reps" : "")+' </span>  </h4> <ul class="move-list" id="' + workout_title+'" data-role="listview">');
             $.each(workout.moves, function(j, move){  //Add moves
                 $("#"+workout_selector).append('<li data-icon="gear"> <a href="#edit-popup" id="'+ i + ','+j+ '" class="editlink" data-rel="popup" data-position-to="window" data-role="button"  data-transition="pop">'+move.name+' <small class="totaltile"> for ' + (move.type == "reps" ? move.value + " reps" : timeText(parseInt(move.value)))+'</small>   <p class="ui-li-aside">Edit Move</p> </a> </li> ');
                 console.log(maintotaltime);
@@ -40,22 +40,22 @@ function populateHTML() {
         });
         //Refresh
         $('#workout-list').collapsibleset().collapsibleset('refresh');//.trigger('create'); ;
+        if (index) $('#workoutcollapsible'+index).collapsible("expand")
 
         $('.move-list').listview().listview('refresh').trigger('create');
 
-
         initMoveList();
-}
 
-function initMoveList(){
+        //initWorkoutList();
+}
+function initWorkoutList(){
     var workoutList = document.getElementById('workout-list');
 
     workoutList.addEventListener('slip:beforereorder', function(e){
-        if (/editlink/.test(e.target.className)) e.preventDefault(); // Don't reorder moves
-        if (/demo-no-reorder/.test(e.target.className)) {
-            e.preventDefault();
-        }
+        if (/editlink/.test(e.target.className)) e.preventDefault(); // Don't reorder moves, only workouts
         else {
+            //Collapse workout if opened
+            console.log("moving workout")
             console.log(e)
             $(e.target.parentElement.parentElement).collapsible("collapse")
         }
@@ -68,7 +68,7 @@ function initMoveList(){
     }, false);
 
     workoutList.addEventListener('slip:beforewait', function(e){
-        console.log("click");
+        console.log("Workout Wait");
         console.log(e)
 
         if (e.target.className.indexOf('instant') > -1) e.preventDefault();
@@ -90,6 +90,47 @@ function initMoveList(){
     }, false);
 
     new Slip(workoutList);
+
+}
+
+function initMoveList(){
+    $("#workout-list").children().each(function() {
+        var moveList = this.getElementsByClassName("move-list")[0];
+        console.log(moveList)
+
+        moveList.addEventListener('slip:beforereorder', function(e){
+
+            console.log("Before order Moves")
+            console.log(e.target.id)
+
+        }, false);
+
+        moveList.addEventListener('slip:beforewait', function(e){
+            console.log("Move Wait");
+            console.log(e)
+
+            if (e.target.className.indexOf('instant') > -1) e.preventDefault();
+        }, false);
+
+        moveList.addEventListener('slip:reorder', function(e){
+            id = e.target.children[0].id.split(",")
+            e.preventDefault() //Don't count as click (aka open Edit-popup)
+
+            if (e.detail.spliceIndex >= json.workouts[id[0]].moves.length) return false
+
+            e.target.parentNode.insertBefore(e.target, e.detail.insertBefore);
+            console.log("Move from " + e.detail.originalIndex + " to " + e.detail.spliceIndex);
+            console.log("On workout " + id[0] + " move " + id[1])
+            json.workouts[id[0]].moves.move(e.detail.originalIndex, e.detail.spliceIndex)
+            populateHTML(id[0])//Update all ID's
+            return false;
+        }, false);
+
+
+        new Slip(moveList);
+    })
+
+
 
 }
 
