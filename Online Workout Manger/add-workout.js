@@ -102,6 +102,17 @@ $(document).ready(function(){
         resetMove();
     }
 
+    //Allow for longer moves - change max if near limit
+    $( "#min-slider-container").on('slidestop', function( event ) {
+        var currentVal = $("#minute-slider").val();
+        var currentMax = parseInt($("#minute-slider").attr("max"));
+       if (currentMax >= 90) return;
+       if (currentVal >= currentMax ) {
+            $( "#minute-slider" ).attr("max", (currentMax+15).toString());
+            $("#minute-slider").slider("refresh");
+        }
+    });
+
     function resetMove() {
         //Reset Values
         $("#move-name").val("");
@@ -136,8 +147,8 @@ $(document).ready(function(){
             $("#error-add-workout").fadeIn();
         }
 
-        else if (title.indexOf(',') > 0){ //Valid title name (no commas)
-            $("#error-add-workout").html("Plase don't use commas in your title");
+        else if (title.indexOf(',') >= 0 || title.indexOf('/') >= 0 ){ //Valid title name (no commas or /)
+            $("#error-add-workout").html("Plase don't use commas (,) or slashes (/) in your title");
             $("#error-add-workout").fadeIn();
         }
 
@@ -161,4 +172,6 @@ $(document).ready(function(){
     $("#add-workout-cancel-btn").click(function(){
         resetAddWorkoutForm();
     });
+
+
 });

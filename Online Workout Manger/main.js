@@ -15,6 +15,10 @@ function timeText(time){
     return "Error";
 }
 
+/**
+* Populate the workouts HTML based on json.
+* @param index index of workout to expand after populating
+*/
 function populateHTML(index) {
 
     $("#workout-list").html(''); //Reset div. Yes, I am redrawing everytime, could be optimized.
@@ -96,18 +100,17 @@ function initWorkoutList(){
 function initMoveList(){
     $("#workout-list").children().each(function() {
         var moveList = this.getElementsByClassName("move-list")[0];
-        console.log(moveList)
+        console.log(moveList);
 
         moveList.addEventListener('slip:beforereorder', function(e){
-
-            console.log("Before order Moves")
+            console.log("Before order Moves");
             console.log(e.target.id)
 
         }, false);
 
         moveList.addEventListener('slip:beforewait', function(e){
             console.log("Move Wait");
-            console.log(e)
+            console.log(e);
 
             if (e.target.className.indexOf('instant') > -1) e.preventDefault();
         }, false);
@@ -120,17 +123,15 @@ function initMoveList(){
 
             e.target.parentNode.insertBefore(e.target, e.detail.insertBefore);
             console.log("Move from " + e.detail.originalIndex + " to " + e.detail.spliceIndex);
-            console.log("On workout " + id[0] + " move " + id[1])
+            console.log("On workout " + id[0] + " move " + id[1]);
             json.workouts[id[0]].moves.move(e.detail.originalIndex, e.detail.spliceIndex)
-            populateHTML(id[0])//Update all ID's
+            populateHTML(id[0]);//Update all ID's
             return false;
         }, false);
 
 
         new Slip(moveList);
     })
-
-
 
 }
 
@@ -160,7 +161,12 @@ $(document).ready(function(){
             document.location = "https://apps.getpebble.com/applications/53b8f8d4c09b06bcc7000007";
         }
     }
-    else $("#heart").show();
+    else {
+        $("#heart").show();
+        $("#new").show();
+
+
+    }
 
     //Initialize Popup
     $( "#edit-popup" ).enhanceWithin().popup();
