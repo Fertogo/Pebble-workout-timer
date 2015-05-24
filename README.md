@@ -9,10 +9,50 @@ Moves can be time (plank for 1 minute) or rep based (10 pullups). In a time move
 
 After installing, locate this app on the phone's Pebble app, then click on the settings icon. You can add workouts and moves from there. 
 
+###Code
+The online workout manager creates a json file with an array of workouts. Format 
+```javascript
+{
+    "workouts": [
+        {
+            "title": "Workout Title",
+            "moves": [
+                {
+                  "name" : "Move 1", 
+                  "value" : 19, //secs
+                  "type" : "time"
+                },
+                {
+                  "name" : "Move 2", 
+                  "value" : 5, //reps
+                  "type" : "reps"
+                }
+            ]
+        },
+        {
+            "title": "Workout Title",
+            "moves": [
+                //...
+            ]
+        }
+        //...
+    ]
+}
+```
+All of the JSON is edited locally. When the save button is clicked, the server is updated and the JSON gets sent to the Pebble. `app.js` parses this JSON. The moves get saved on `localStorage` using the title as key. An array of all the titles is then sent to `main.c`, where they are displayed. `main.c` communicates with `app.js` to request moves and times.
+
 
 ###Changelog
-* **v3.1**
+* **v3.2**
+  * Online Workout Manager
+    * Reorder moves by clicking and dragging
+    * Create longer moves
+  * UI Changes
+    * Show timer in minutes and seconds
+  * Bug Fixes
+    * Font to fit bug for a more consistant layout
 
+* **v3.1**
   * Pebble Time Compatibility 
     * App now works with Pebble Time and makes use of color screen for various windows. 
   * Updated Layout
@@ -22,7 +62,6 @@ After installing, locate this app on the phone's Pebble app, then click on the s
     * Fix bug where text would get cut off by status bar
     * Fix bug that would cause workouts to get stuck on loading after second move. 
     * Miscellaneous bug fixes
- 
 * **v3.0**
 ##### This update changes the way workouts are stored. See README and `migrate-workouts.py`
 
@@ -74,34 +113,4 @@ After installing, locate this app on the phone's Pebble app, then click on the s
   * ~~Delete workouts from Pebble~~ (removed in v2.0)
   * Start timers from Pebble
 
-###Code
-The online workout manager creates a json file with an array of workouts. Format 
-```javascript
-{
-    "workouts": [
-        {
-            "title": "Workout Title",
-            "moves": [
-                {
-                  "name" : "Move 1", 
-                  "value" : 19, //secs
-                  "type" : "time"
-                },
-                {
-                  "name" : "Move 2", 
-                  "value" : 5, //reps
-                  "type" : "reps"
-                }
-            ]
-        },
-        {
-            "title": "Workout Title",
-            "moves": [
-                //...
-            ]
-        }
-        //...
-    ]
-}
-```
-All of the JSON is edited locally. When the save button is clicked, the server is updated and the JSON gets sent to the Pebble. `app.js` parses this JSON. The moves get saved on `localStorage` using the title as key. An array of all the titles is then sent to `main.c`, where they are displayed. `main.c` communicates with `app.js` to request moves and times.
+
