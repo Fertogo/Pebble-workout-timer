@@ -148,18 +148,21 @@ $(document).ready(function(){
     parser.href = document.URL;
     var urlinfo = parser.search.slice(6).split(','); //Split url into array of info. Current Format [token,version]
     var token = urlinfo[0]; //Unique to Pebble account and this app!
-    var version = urlinfo[1];
+    var version = parseFloat(urlinfo[1]) ;
     var jsonstring = false;
 
-    if (version != "3.0" && version != "3.1") {
+    if (version < 3.0) {
         $("#update").show();
-        if (confirm("New Version available. You must update to v3.0 to continue. iOS only: v3.0 will come out in a couple of weeks! ")){
+        if (confirm("New Version available. You must update to v3.x to continue. ")){
             document.location = "https://apps.getpebble.com/applications/53b8f8d4c09b06bcc7000007";
         }
         else {
             document.location = "pebblejs://close#"
             document.location = "https://apps.getpebble.com/applications/53b8f8d4c09b06bcc7000007";
         }
+    }
+    else if (version < 3.2){
+        $("#update").show();
     }
     else {
         $("#heart").show();

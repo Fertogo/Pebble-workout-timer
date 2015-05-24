@@ -23,25 +23,41 @@ $(document).ready(function(){
             $("#edit-minute-container").hide();
             $("#edit-second-slider").val(move.value);
             $("#edit-second-slider-label").text("Repetitions");
+            $("#edit-move-type").prop('checked',true);
+
         }
         else {
             $("#edit-minute-container").show();
-
             $("#edit-minute-slider").val((move.value - move.value%60)/60);
             $("#edit-second-slider").val(move.value%60);
             $("#edit-second-slider-label").text("Seconds");
+            $("#edit-move-type").prop('checked',false);
 
         }
 
         $("#edit-second-slider").slider("refresh");
         $("#edit-minute-slider").slider("refresh");
-
+        $("#edit-move-type" ).flipswitch( "refresh" );
 
         $("#edit-save-btn").val(id[0]+','+id[1]);
     });
 
-    //TODO add reps support
+    $("#edit-move-type").change(function(){
+        if ($("#edit-move-type").is(':checked')) {  //Go into rep mode
+            $("#edit-minute-container").hide();
+            $("#edit-second-slider-label").html("Repetitions");
+        }
+        else {
+            $("#edit-minute-slider").val(0);
+            $("#edit-minute-slider").slider("refresh");
+            $("#edit-minute-container").show();
+            $("#edit-second-slider-label").html("Seconds");
+        }
+    });
     $(document).on('click', '.add-move-to-existing', function(){
+
+        $("#edit-move-type").prop('checked',false);
+        $("#edit-move-type" ).flipswitch( "refresh" );
 
         $("#edit-delete-btn").hide();
         $( "#edit-popup" ).enhanceWithin().popup();
@@ -75,13 +91,18 @@ $(document).ready(function(){
         var secs = $("#edit-second-slider").val();
         var move = json.workouts[id[0]].moves[id[1]] || {"type": "time", "value" : 0, "name" : ""};
 
-        if (move.type == "reps"){ //TODO DRY
+
+        if ($("#edit-move-type").is(':checked')){ //TODO DRY
             if (secs <= 0 || title == "") {
                 $("#popup-error").fadeIn();
                 return;
             }
             move.name = title;
             move.value = secs;
+            move.type = "reps";
+
+            if (!json.workouts[id[0]].moves[id[1]]) json.workouts[id[0]].moves.push(move)
+
             console.log("Edited");
             populateHTML(id[0]);
             console.log(id);
@@ -94,6 +115,7 @@ $(document).ready(function(){
                 var time = (parseInt(mins)*60)+parseInt(secs);
                 move.name = title;
                 move.value = time;
+                move.type = "time";
 
                 if (!json.workouts[id[0]].moves[id[1]]) json.workouts[id[0]].moves.push(move)
                 console.log("Edited");

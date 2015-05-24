@@ -35,6 +35,8 @@ $(document).ready(function(){
             $("#sec-slider-label").html("Repetitions");
         }
         else {
+            $("#minute-slider").val(0);
+            $("#minute-slider").slider("refresh");
             $("#min-slider-container").show();
             $("#sec-slider-label").html("Seconds");
         }
