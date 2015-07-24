@@ -1,0 +1,19 @@
+extends layout
+
+
+block content
+  h1 Admin Stats
+  script(src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/1.0.2/Chart.min.js')
+  script(type='text/javascript').
+    var stats = !{JSON.stringify(stats)};
+
+
+
+  each stat, index in stats
+    h2= stat.name
+    canvas(id=stat.name width="600" height="400")
+    //- ul
+    //-     each record in stat.data
+    //-         li  #{record.date}  -  #{record.value}
+
+  script(src='/javascripts/admin.js')

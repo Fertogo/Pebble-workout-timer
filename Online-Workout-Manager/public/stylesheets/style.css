@@ -1,8 +1,67 @@
-body {
-  padding: 50px;
-  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+.error{
+    text-align: center;
+    background-color: rgba(255, 0,0,.2);
+    padding: 3px;
+    border: 1px solid red;
+    margin-bottom: 5px;
 }
 
-a {
-  color: #00B7FF;
+a:link {
+    text-decoration: none;
+ }
+
+ .totaltime {
+    font-weight: 100;
+ }
+
+ .delete{
+    background-color: #FFA6A6!important;
+ }
+
+.success{
+    background-color: #B5FDC6!important;
+    padding: 3px;
+    border: 1px solid #0A8000;
+    margin-bottom: 5px;
+ }
+
+ .info{
+    background-color: #D3DEFF!important;
+    padding: 3px;
+    border: 1px solid #0040FF;
+    margin-bottom: 5px;
+ }
+
+ .add-move-to-existing,.delete-workout{
+    padding:0;
+    border:0;
+    margin:0;
+ }
+
+ .li-btn {
+    margin:0;
+ }
+
+ .slip-reordering {
+     box-shadow: 0 2px 10px rgba(0,0,0,0.45);
+ }
+
+/*  FAQ Page  */
+ .ui-listview>li p, .ui-listview>.ui-li-static, .ui-listview>.ui-li-divider, .ui-listview>li>a.ui-btn{
+     overflow: visible;
+     white-space: normal;
+ }
+
+
+/*Add workout page*/
+.custom-label-flipswitch.ui-flipswitch .ui-btn.ui-flipswitch-on {
+    text-indent: -3.4em;
+ }
+ .custom-label-flipswitch.ui-flipswitch .ui-flipswitch-off {
+    text-indent: 0.5em;
+ }
+
+.move-type-selector{
+     float:right;
+     width:185px;
 }
