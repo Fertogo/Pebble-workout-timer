@@ -5,7 +5,7 @@ $(document).ready(function(){
         //Reset Form
         workout = {};
         workout.moves = [];
-        workout.title = "";
+        workout.name = "";
         $('#add-total-time').html('');
         $("#titletext").html("");
         $("#title").val("");
@@ -135,7 +135,7 @@ $(document).ready(function(){
 
         var same_title = false;
         $.each(json.workouts, function(index, workout){
-            if (title == workout.title) same_title = true;
+            if (title == workout.name) same_title = true;
         });
 
         //Form Validation
@@ -161,7 +161,7 @@ $(document).ready(function(){
 
         else {  //Looks good
             totalsecs = 0;
-            workout.title = title;
+            workout.name = title;
             console.log(workout);
             json.workouts.push(workout);
             populateHTML();

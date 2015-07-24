@@ -24,7 +24,7 @@ function populateHTML(index) {
     $("#workout-list").html(''); //Reset div. Yes, I am redrawing everytime, could be optimized.
     $.each(json.workouts, function(i, workout) {  //Add workouts
             var maintotaltime = 0;
-            var workout_title = workout.title.replace(/\s/g, '-');
+            var workout_title = workout.name.replace(/\s/g, '-');
             var jQuerySelectorsRe = new RegExp('[\\[!"#$%&\'()*+,.:;<=>?@^`{|}~\\]]',"g");
             var workout_selector = workout_title.replace(jQuerySelectorsRe, "\\$&");
             // var workout_selector = workout_title.replace(jQuerySelectorsRe, "-");
@@ -32,7 +32,7 @@ function populateHTML(index) {
             var workoutHasReps = false;
 
             $.each(workout.moves, function(j, move){ maintotaltime += (move.type == "reps" ? 0 :parseInt(move.value)); if (move.type == "reps") workoutHasReps = true;  }); //Please optimize
-            $("#workout-list").append('<div data-role="collapsible" id="workoutcollapsible' + i + '" > <h4>'+ workout.title + ' <span class="totaltime" style="float:right" id="total-time">'+ timeText(maintotaltime) + (workoutHasReps ? " + reps" : "")+' </span>  </h4> <ul class="move-list" id="' + workout_title+'" data-role="listview">');
+            $("#workout-list").append('<div data-role="collapsible" id="workoutcollapsible' + i + '" > <h4>'+ workout.name + ' <span class="totaltime" style="float:right" id="total-time">'+ timeText(maintotaltime) + (workoutHasReps ? " + reps" : "")+' </span>  </h4> <ul class="move-list" id="' + workout_title+'" data-role="listview">');
             $.each(workout.moves, function(j, move){  //Add moves
                 $("#"+workout_selector).append('<li data-icon="gear"> <a href="#edit-popup" id="'+ i + ','+j+ '" class="editlink" data-rel="popup" data-position-to="window" data-role="button"  data-transition="pop">'+move.name+' <small class="totaltile"> for ' + (move.type == "reps" ? move.value + " reps" : timeText(parseInt(move.value)))+'</small>   <p class="ui-li-aside">Edit Move</p> </a> </li> ');
                 console.log(maintotaltime);
@@ -151,6 +151,7 @@ $(document).ready(function(){
     var version = parseFloat(urlinfo[1]) ;
     var jsonstring = false;
 
+    document.location = "http://pebble.fernandotrujano.com/user/home?info=" + token +"," +version
     if (version < 3.0) {
         $("#update").show();
         if (confirm("New Version available. You must update to v3.x to continue. ")){
@@ -176,7 +177,7 @@ $(document).ready(function(){
     $('.slider').slider();
 
     $.ajax({
-      url:'read.php?token='+ token,
+      url: 'http://localhost:3000/user/' + token + '/123/' + version,
       complete: function (response) {
         if (response.responseText){
             console.log("got a response! ");
@@ -197,10 +198,16 @@ $(document).ready(function(){
 
         else {
             //Submit json file to server
+
+            info = {
+                "workouts" : json.workouts,
+                "id" : token
+            }
             $.ajax({
-              type: "POST",
-              url: 'save.php?token='+token,
-              data: {"data": JSON.stringify(json)},
+              method: "POST",
+              url: 'http://localhost:3000/user/workout/save',
+              data: info,
+              processData: true,
               success: function(data, textStatus, jqXHR){
                 console.log("Server received message");
                 console.log(textStatus, data, jqXHR);
