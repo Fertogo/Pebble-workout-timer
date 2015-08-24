@@ -15,8 +15,10 @@ app.use(bodyParser.json());
 */
 router.put('/import/user', adminController.importUser);
 
-/* GET admin page */
 router.get('/scheduleStats', adminController.scheduleStats);
+
+router.get('/getStats', adminController.getStats);
+
 
 router.get('/', adminController.showStats);
 

@@ -65,6 +65,11 @@ AdminController.getUser = function(req, res, next){
     });
 };
 
+AdminController.getStats = function ( req, res, next){
+    getStats(req, res, next);
+    res.send("getting stats...");
+}
+
 
 function countAllWorkouts(callback) {
     //Count total number of workouts
@@ -117,6 +122,20 @@ function countTotalMoveTime(callback){
             callback(data[0].count);
         }
     )
+}
+
+function countTotalWorkedOutTime(callback){
+    mongoose.model('User').find({}, function(err, users){
+        var sinceDate = new Date();
+        sinceDate.setYear('2010');
+        var i, len, user, totalTime = 0;
+        for (i=0, len=users.length; i<len; i++) {
+            user = users[i];
+            totalTime += user.timeWorkedSince(sinceDate)
+        }
+        console.log(totalTime)
+        callback(totalTime);
+    })
 }
 AdminController.showStats = function(req,res,next) {
     mongoose.model('Stat').find({}, function(err, stats) {
@@ -199,6 +218,20 @@ function getStats(req,res,next) {
             stat.save(function(err){
                 if (err) return console.log(err);
                 console.log("totalMoveTime : " + totalMoveTime);
+            });
+        });
+    });
+
+    mongoose.model('Stat').findOrCreate({"name" : "totalTimeWorkedOut"}, function(err, stat){
+        if (err) return console.log(err);
+        countTotalWorkedOutTime(function(totalTime){
+            stat.data.push({
+                "value" : totalTime,
+                "date"  : new Date()
+            });
+            stat.save(function(err) {
+                if (err) return console.log(err);
+                console.log("totalTimeWorkedOut: " + totalTime);
             });
         });
     });

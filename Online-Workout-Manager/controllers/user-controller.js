@@ -75,6 +75,10 @@ UserController.completeWorkout = function(req, res, next) {
             res.sendStatus(404);
             return;
         }
+        if (!user) {
+            console.log("user " + userId + " not found");
+            return res.sendStatus(404);
+        }
         // console.log(user)
         user.completeWorkout(workoutName, date, timelineId, function(err){
             if (!err){
