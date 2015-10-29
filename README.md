@@ -43,6 +43,13 @@ All of the JSON is edited locally. When the save button is clicked, the server i
 
 
 ###Changelog
+* **v3.5**
+   * Online Workout Manager
+     * Completely remade backend in node.js
+     * Faster + more secure
+   * Timeline pins
+   * Workout stats
+   * Admin panel
 * **v3.2**
   * Online Workout Manager
     * Reorder moves by clicking and dragging
