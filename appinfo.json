@@ -1,14 +1,13 @@
 {
     "appKeys": {
-        "DONE": 0,
-        "RESTORE": 3,
-        "RESUME": 2,
-        "WORKOUT": 1
+        "WORKOUT": 0,
+        "WORKOUT_DONE": 1
     },
     "capabilities": [
         "configurable"
     ],
     "companyName": "Fernando Trujano",
+    "enableMultiJS": false,
     "longName": "Custom Workout Timer",
     "projectType": "native",
     "resources": {
@@ -16,23 +15,23 @@
             {
                 "file": "images/Stopbtn.png",
                 "name": "STOP_BUTTON",
-                "type": "png"
+                "type": "bitmap"
             },
             {
                 "file": "images/PausePlay.png",
                 "name": "PLAY_PAUSE_BUTTON",
-                "type": "png"
+                "type": "bitmap"
             },
             {
                 "file": "images/Nextbtn.png",
                 "name": "NEXT_BUTTON",
-                "type": "png"
+                "type": "bitmap"
             },
             {
                 "file": "images/menuicon.png",
                 "menuIcon": true,
                 "name": "MENU_ICON",
-                "type": "png"
+                "type": "bitmap"
             }
         ]
     },
@@ -43,7 +42,7 @@
         "basalt"
     ],
     "uuid": "2add7054-08bc-4dda-b4d8-28f22f3d7ec2",
-    "versionLabel": "3.1",
+    "versionLabel": "3.5",
     "watchapp": {
         "watchface": false
     }

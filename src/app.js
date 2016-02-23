@@ -1,157 +1,172 @@
-//Pebble JS Component of timer. 
-//By Fernando Trujano
-//    trujano@mit.edu
-// 05/05/2015
-var version = "3.1";
-//Sends workouts to watch app using Pebble.sendAppMesssage
+//--------- js-message-queue ----------//
+"use strict";(function(root,factory){if(typeof define==="function"&&define.amd){define([],factory)}else if(typeof module==="object"&&module.exports){module.exports=factory()}else{root.MessageQueue=factory()}})(this,function(){var RETRY_MAX=5;var queue=[];var sending=false;var timer=null;return{reset:reset,sendAppMessage:sendAppMessage,size:size};function reset(){queue=[];sending=false}function sendAppMessage(message,ack,nack){if(!isValidMessage(message)){return false}queue.push({message:message,ack:ack||null,nack:nack||null,attempts:0});setTimeout(function(){sendNextMessage()},1);return true}function size(){return queue.length}function isValidMessage(message){if(message!==Object(message)){return false}var keys=Object.keys(message);if(!keys.length){return false}for(var k=0;k<keys.length;k+=1){var validKey=/^[0-9a-zA-Z-_]*$/.test(keys[k]);if(!validKey){return false}var value=message[keys[k]];if(!validValue(value)){return false}}return true;function validValue(value){switch(typeof value){case"string":return true;case"number":return true;case"object":if(toString.call(value)==="[object Array]"){return true}}return false}}function sendNextMessage(){if(sending){return}var message=queue.shift();if(!message){return}message.attempts+=1;sending=true;Pebble.sendAppMessage(message.message,ack,nack);timer=setTimeout(function(){timeout()},1e3);function ack(){clearTimeout(timer);setTimeout(function(){sending=false;sendNextMessage()},200);if(message.ack){message.ack.apply(null,arguments)}}function nack(){clearTimeout(timer);if(message.attempts<RETRY_MAX){queue.unshift(message);setTimeout(function(){sending=false;sendNextMessage()},200*message.attempts)}else{if(message.nack){message.nack.apply(null,arguments)}}}function timeout(){setTimeout(function(){sending=false;sendNextMessage()},1e3);if(message.ack){message.ack.apply(null,arguments)}}}});
 
-var counter = 0; 
+var VERSION = "4.0";
+var MESSAGE_CHUNK_LENGTH = 100; 
+var MESSAGE_DELIMITER = "\t"; 
 
 
-function sendMessage(type, message1, message2, message3){ 
-  //Send Message to Pebble 
-  console.log("sending  message to watchapp " + type +" : "+ message1 + " : " + message2 + " : " + message3); 
-  Pebble.sendAppMessage( { "0": type, "1": message1, "2": message2, "3" : message3 },
-        function(e) { console.log("Successfully delivered message");  },
-        function(e) { console.log("Unable to deliver message " + " Error is: " + e.error.message); }                        
-      );
-}
+var BASE_URL = 'http://pebble.fernandotrujano.com';
+
+
 
 Pebble.addEventListener("ready", function(e){
-    console.log("JS code running!");  
-    sendMessage("ready"); 
+  console.log("JS code running!"); 
+
+//  var moves = [{"type":"reps","value":3,"name":"Lunges 20"},{"type":"time","value":60,"name":"Next Bridges"},{"type":"reps","value":3,"name":"Bridges: 20"},{"type":"time","value":60,"name":"Next Barbell Deadlift"},{"type":"reps","value":3,"name":"Barbell Deadlift 12"},{"type":"time","value":60,"name":"Next Glutes Kickback"},{"type":"reps","value":4,"name":"Glutes Kickback 20"},{"type":"time","value":60,"name":"Next Standing Calf Raises"},{"type":"reps","value":3,"name":"Standing Calf Raises 20"},{"type":"time","value":60,"name":"Next Calf Press on Leg Press"},{"type":"reps","value":3,"name":"Calf Press on Leg Press 12"}]; 
+//   sendWorkout("WorkoutNameTest", moves); 
+//   parseAndAddWorkouts("REMOVEME"); 
 });
 
 Pebble.addEventListener("showConfiguration", function(){ 
-  console.log("Showing Configuration v" + version);
-  console.log(version); 
-  Pebble.openURL("http://fernandotrujano.com/pebble/workout-manager.html?info="+Pebble.getAccountToken()+','+version); 
-   // Pebble.openURL("http://fernandotrujano.com/pebble/new/workout-manager.html?info=migrate,2.7"); 
-
+  console.log("Showing Configuration v" + VERSION);
+  Pebble.openURL(BASE_URL + "/user/home?info=" + Pebble.getAccountToken() + "," + VERSION);
 });
+
+function sendMessage(messageType, messageHeader, message) { 
+  message[0] = messageType; 
+  message[1] = messageHeader; 
+  console.log("sending message of type: " + messageType); 
+  MessageQueue.sendAppMessage(message, function(e) { console.log("send yes"); }, function(e){console.log("send no");});
+}
+function sendWorkout(workoutName, moves) {
+  console.log("sending workout" + workoutName + " with moves: " + moves); 
+  
+  if (moves.length > MESSAGE_CHUNK_LENGTH) return; //TODO Only sending one chunk for now. 
+  
+  var messageType = "MOVES"; 
+  var messageHeader = [workoutName].join(MESSAGE_DELIMITER); 
+  var i, len_i, j, len_j, chunk, move, message, messageIndex;
+  
+  //Split each message into chunks. 
+  for (i=0, len_i=moves.length; i<len_i; i+=MESSAGE_CHUNK_LENGTH) { 
+    message = {}; 
+    
+    chunk = moves.slice(i, i+MESSAGE_CHUNK_LENGTH);
+    
+    messageIndex = 2; //Start moves at 2 
+    //Add each move in chunk to message
+    for (j=0, len_j=chunk.length; j<len_j; j++) { 
+      move = chunk[j]; 
+      message[messageIndex] = [move.name, move.type, move.value].join(MESSAGE_DELIMITER); 
+      messageIndex++; 
+      console.log("constructing message");
+    }
+    
+    sendMessage(messageType, messageHeader, message);   
+  }
+  
+}
+
+function parseAndAddWorkouts(jsonString) { 
+  console.log("Configuration window returned: " + jsonString); //See repo for json structure
+
+  var json; 
+  json = JSON.parse(decodeURIComponent(jsonString));  
+//      json = JSON.parse('{"workouts":[{"moves":[{"name":"Move 1","value":6,"type":"time"},{"name":"Move 2","value":7,"type":"time"},{"name":"Move 3","value":7,"type":"time"}],"title":"Just Time"},{"moves":[{"name":"move 1","value":6,"type":"reps"},{"name":"move 2","value":5,"type":"reps"},{"name":"move 3","value":12,"type":"reps"}],"title":"Just reps"},{"moves":[{"name":"move 1","value":16,"type":"time"},{"name":"move 2 reps","value":4,"type":"reps"},{"name":"move 3 time","value":6,"type":"time"},{"name":"move 4 reps","value":14,"type":"reps"}],"title":"Both"}]}')
+
+  var workoutTitle,moves, workoutInfo, messageIndex=2, message={}; 
+
+  localStorage.clear(); 
+  //Add Each workout
+  for (var workout in json.workouts) {    
+    workoutTitle = json.workouts[workout].title; 
+    workoutInfo = [workoutTitle].join(MESSAGE_DELIMITER); 
+    moves = JSON.stringify(json.workouts[workout].moves); //Concert to string before saving!
+    message[messageIndex] = workoutInfo; 
+    messageIndex++; 
+    localStorage.setItem(workoutTitle, moves);     //Save workout on local storage
+    console.log("set " + workoutTitle + "to " + moves); 
+  }
+
+  console.log("Local Storage Set");
+  
+  sendMessage("WORKOUTS", "NONE", message); 
+    
+
+}
+
 
 //After Closing settings view
 //Send Title(key) to watch app (Persiant Memory), and save JSON in Internal Memory
-Pebble.addEventListener("webviewclosed",
-  function(e) {
+Pebble.addEventListener("webviewclosed",function(e) {
     if (e.response != "CANCELLED") {
-      console.log("Configuration window returned: " + e.response); //See repo for json structure
-
-      var json; 
-      json = JSON.parse(decodeURIComponent(e.response));  
-      //json = JSON.parse('{"workouts":[{"moves":[{"name":"Move 1","value":6,"type":"time"},{"name":"Move 2","value":7,"type":"time"},{"name":"Move 3","value":7,"type":"time"}],"title":"Just Time"},{"moves":[{"name":"move 1","value":6,"type":"reps"},{"name":"move 2","value":5,"type":"reps"},{"name":"move 3","value":12,"type":"reps"}],"title":"Just reps"},{"moves":[{"name":"move 1","value":16,"type":"time"},{"name":"move 2 reps","value":4,"type":"reps"},{"name":"move 3 time","value":6,"type":"time"},{"name":"move 4 reps","value":14,"type":"reps"}],"title":"Both"}]}')
-      
-      var title; 
-      var moves; 
-      var workouts = []; 
-      
-      console.log(json); 
-      window.localStorage.clear(); 
-      //Add Each workout
-      for (var workout in json.workouts) {    
-        title = json.workouts[workout].title; 
-        moves = JSON.stringify(json.workouts[workout].moves); //Concert to string before saving!
-        workouts.push(title); //Add to workouts array to be sent to Pebble 
-        window.localStorage.setItem(title, moves);     //Save workout on local storage
-      }
-      
-      console.log("Local Storage Set");
-      sendMessage("workouts", workouts.join()); //Send workout list to Pebble
-      console.log(workouts); 
-
+      parseAndAddWorkouts(e.response); 
     }
   }
 );
 
-/**
-* Sends messages to Pebble with next timer to set
-* @param moves: list of objects representing moves {name: ,value: , type: }
-**/
-function setTimers(moves) { 
-  console.log("On set timers. Move: " + moves[counter].name + " Time: " + moves[counter].value + " Type: " + moves[counter].type ); 
-  
-  sendMessage("move", moves[counter].name, moves[counter].value.toString(), moves[counter].type); 
-  counter += 1; 
-  window.localStorage.setItem("currentMoveCounter", counter); 
-  
-  console.log("Message set, incrementing counter to " + counter); 
+//Workout requested from phone
+function workoutMessageHandler(workoutTitle) { 
+  console.log("Workout Requested: " + workoutTitle); 
+  var moves = localStorage.getItem(workoutTitle); 
+  console.log(moves); 
+  moves = JSON.parse(moves); 
+
+  sendWorkout(workoutTitle, moves); 
 }
 
-//Tries to advance to the next workout. If there are no more workouts, it notifies the Pebble.   
-function advanceWorkout(){ 
+//TODO Call this from Pebble side
+function workoutDoneMessageHandler(workoutTitle) { 
+  workoutCompleted(workoutTitle); 
 
-      if( counter+1 <= moves.length){   //If there is at least one move left
-          setTimers(moves);
-        } 
-      else { 
-        window.localStorage.removeItem("currentMoveCounter");
-        window.localStorage.removeItem("currentWorkoutName");
-        sendMessage("end"); 
+}
+
+
+function workoutCompleted(title){ 
+  console.log("sending request");
+
+  if (Pebble.getActiveWatchInfo && Pebble.getActiveWatchInfo().firmware.major >= 3) { 
+    Pebble.getTimelineToken(function (timelineToken) {
+        var url = [ 
+              BASE_URL,
+              "/user/workout/completed/" , 
+              encodeURIComponent(Pebble.getAccountToken()), "/",
+              encodeURIComponent(title), "/",
+              timelineToken 
+        ].join("");
+        console.log("URL: " + url);
+        postWorkoutCompleted(url);
+
+      },function (error) { 
+        console.log('Error getting timeline token: ' + error);
       }
+    );
+  }
+
+  else { 
+      var url = BASE_URL + '/user/workout/completed/' + encodeURIComponent(  Pebble.getAccountToken() )  + '/' + encodeURIComponent(window.localStorage.getItem("currentWorkoutName")) + "/none"; 
+      postWorkoutCompleted(url);
+  }
+  
+
 }
 
-//Restores the state of the current workout
-// @param goBack 
-function restoreWorkout(goBack){
-      currentWorkoutName = window.localStorage.getItem("currentWorkoutName");
-      moves = JSON.parse(window.localStorage.getItem(currentWorkoutName)); 
-      counter = parseInt(window.localStorage.getItem("currentMoveCounter"));   
-      if (goBack) counter -= 1; //go back a move since we are preloading moves 
+function postWorkoutCompleted(url){ 
+  //Send request to server
+  console.log(url)
+  var req = new XMLHttpRequest();
+  req.open('POST', url, true);
+  req.onload = function(e) {
+    if (req.readyState == 4 && req.status == 200) {
+      if(req.status == 200) {
+        console.log("Workout recorded")
+      } else { console.log('Error'); }
+    }
+  }
+  req.send(null);
+
 }
 
-//Starts a new workout based on given name
-function startNewWorkout(workoutName){ 
-        console.log("Starting new workout")
-        
-        moves = JSON.parse(window.localStorage.getItem(workoutName)); //LocalStorage saves items as stings, need to convert
-
-        counter = 0; //Reset counter
-        window.localStorage.setItem("currentMoveCounter", counter); 
-        window.localStorage.setItem("currentWorkoutName", workoutName); 
-        setTimers(moves);  
-}
-
-// var moves = "";
 //Recieve message from Pebble
 Pebble.addEventListener("appmessage",
   function(e) {
-    console.log("Recieved something on phone---")
+    console.log("Recieved something on phone---");
     for (var type in e.payload){
-          console.log("Received message: " + e.payload[type] + " of type: " + type);       
+        console.log("Received message: " + e.payload[type] + " of type: " + type);
+        if (type === 'WORKOUT') workoutMessageHandler(e.payload[type]); 
+        if (type === 'WORKOUT_DONE') workoutDoneMessageHandler(e.payload[type]);           
     }
-    
-    if ("RESUME" in e.payload){
-      console.log("RESUME WORKOUT MESSAGE"); 
-      console.log();
-      
-      e.payload["RESUME"] === "true" ? goBack = true : goBack = false; 
-      restoreWorkout(goBack);       
-      advanceWorkout();                
-    }
-    
-    else if ("RESTORE" in e.payload){
-      restoreWorkout(); 
-    }
-    
-      else if ("WORKOUT" in e.payload){
-        console.log("RECEIVED WORKOUT MESSAGE:"); 
-        startNewWorkout(e.payload["WORKOUT"]); 
-    }
-
-    //else  { 
-    else if ("DONE" in e.payload){
-      //console.log("Name was done, ab+out to set another timer with moves: "+ moves + " and counter: "+ counter); 
-      advanceWorkout(); 
-    } 
   }
 );
 
-/*
-* Message Protocol:
-*   Pebble sends the following messages to the phone:
-*      Type: RESUME - Tells the phone to restore the state of the workout and go to the next move
-*      Type: RESTORE - Tells the phone to restore the sate of the workout (current workout, current move)
-*      Type: DONE" - Tells the phone that the current move is done, and it should advance to the next move
-*      Type: WORKOUT Data: workout-name - Tells the phone the name of a specific workout to start. 
-*  In all of these cases (except "restoreWorkout"), Pebble expects a reply from the phone with either a move and time, or "end" 
-*/
