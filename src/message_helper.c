@@ -13,6 +13,14 @@
 
 
 void message_helper_send_message(int type, char* message); 
+bool jsReady = false; 
+static AppTimer *jsReadyTimer; 
+static void jsReadyTimer_callback(void* data); 
+
+typedef struct MessageData { 
+  uint8_t type; 
+  char* message; 
+} MessageData; 
 
 
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
@@ -22,6 +30,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
   if (data_type) {
     char * type = data_type->value->cstring; 
     APP_LOG(APP_LOG_LEVEL_INFO, "Message received with type: %s", type);
+
     
     char* header = dict_find(iterator, MESSAGE_HEADER_INDEX)->value->cstring; 
     
@@ -36,6 +45,10 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
       else break; 
     }
     
+    if (strcmp(type,"READY") == 0) {
+      jsReady = true; 
+      return;
+    }; 
     if (strcmp(type,"MOVES") == 0) {
       workout_parse_message(header, data); 
     }
@@ -77,22 +90,51 @@ void message_helper_finish_workout(Workout* workout) {
 }
 
 void message_helper_send_message(int type, char* message) { 
-   APP_LOG(APP_LOG_LEVEL_DEBUG,"Sending message... %s %i", message, type);
-   DictionaryIterator *iter;
-   app_message_outbox_begin(&iter);
-   dict_write_cstring(iter, type, message);
-   int result = app_message_outbox_send();
-   switch (result){ 
-      case APP_MSG_OK:  
-        APP_LOG(APP_LOG_LEVEL_DEBUG,"Message \"%s\" of type %i sent to phone", message, type);
-        break; 
-      case APP_MSG_BUSY:  //There are pending messages (in or out) that need to be processed first, try resending in a bit
-        APP_LOG(APP_LOG_LEVEL_DEBUG,"BUSY");
-        //TODO
+  
+  
+  APP_LOG(APP_LOG_LEVEL_DEBUG,"Sending message... %s %i", message, type);
+  
+  if (!jsReady) { 
+    MessageData* message_data = malloc(sizeof(MessageData)); 
+    message_data->message = message; 
+    message_data->type = type; 
+
+    jsReadyTimer = app_timer_register(1, jsReadyTimer_callback, message_data); 
+    return; 
+  }
+  DictionaryIterator *iter;
+  app_message_outbox_begin(&iter);
+  dict_write_cstring(iter, type, message);
+  int result = app_message_outbox_send();
+  switch (result){  
+    case APP_MSG_OK:  
+      APP_LOG(APP_LOG_LEVEL_DEBUG,"Message \"%s\" of type %i send attempt...", message, type);
+      break; 
+    case APP_MSG_BUSY:  //There are pending messages (in or out) that need to be processed first, try resending in a bit
+      APP_LOG(APP_LOG_LEVEL_DEBUG,"BUSY");
+      //TODO
       break; 
    }
 }
 
+static AppTimer *jsReadyTimer;
+static void jsReadyTimer_callback(void *data){ 
+    APP_LOG(APP_LOG_LEVEL_DEBUG,"Trying to send message, phone isn't ready yet!");
+
+    //Wait until JS is ready
+    if (jsReady) { 
+      MessageData* message_data = (MessageData *)(data); 
+      int type = message_data->type; 
+      char* message = message_data->message; 
+      //TODO free message_data; 
+      free(message_data); 
+      message_helper_send_message(type,message);  
+    }
+  else { //Wait 1/10 seconds
+    jsReadyTimer = app_timer_register(100 /* milliseconds */, jsReadyTimer_callback, data);  
+  }
+  
+}
 
 //Minified Strtok (ignore) Thanks to Steve Caldwell for trick. 
 char*strtok(s,delim)
