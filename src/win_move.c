@@ -30,7 +30,7 @@ static ActionBarLayer *move_controls;
 static void initialise_ui(void) {
   s_window = window_create();
   #ifndef PBL_SDK_3
-    window_set_fullscreen(s_window, 0);
+    window_set_fullscreen(s_window, false);
   #endif
   
   s_res_gothic_18 = fonts_get_system_font(FONT_KEY_GOTHIC_18);

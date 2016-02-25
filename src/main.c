@@ -21,7 +21,7 @@ int main(void) {
 static void init(void) { 
   APP_LOG(APP_LOG_LEVEL_DEBUG, "C Code - Init");
   message_helper_init(); 
-  show_win_main(); 
+  win_main_init(); 
 }
 
 static void deinit(void) { 

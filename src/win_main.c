@@ -1,6 +1,7 @@
 #include <pebble.h>
 #include "win_main.h"
 #include "message_helper.h"
+#include "win_instructions.h"
 
 #include "storage.h"
 
@@ -91,8 +92,19 @@ void initialize_menu(void) {
   });
 }
 
-void show_win_main(void) {
+/**
+* Checks to see if main window is ready to be shown. Otherwise, it shows approrpriate window. 
+*/
+void win_main_init() { 
   initialise_ui();
+  if (storage_get_workout(0) == NULL) { 
+    show_win_instructions(); 
+  }
+  else show_win_main(); 
+}
+
+void show_win_main(void) {
+  
   win_main_parse_workouts(); 
   initialize_menu(); 
   
@@ -108,6 +120,12 @@ void hide_win_main(void) {
 }
 
 void win_main_refresh(void) { 
+  if (!window_is_loaded(s_window)){
+    //This happens on first use when instruction window was shown instead. 
+    show_win_main();
+    hide_win_instructions(); 
+  } 
+  
   win_main_parse_workouts(); 
   menu_layer_reload_data(menu_workouts); //Reload the menu 
 }
