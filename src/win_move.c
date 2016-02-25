@@ -9,17 +9,19 @@ void next_move_click_handler(ClickRecognizerRef recognizer, void *context);
 void stop_move_click_handler(ClickRecognizerRef recognizer, void *context); 
 void pause_play_move_click_handler(ClickRecognizerRef recognizer, void *context); 
 
+void setup_timer_move(); 
+void setup_rep_move(); 
 
 // BEGIN AUTO-GENERATED UI CODE; DO NOT MODIFY
 static Window *s_window;
 static GFont s_res_gothic_18;
-static GBitmap *s_res_stop_button;
-static GBitmap *s_res_play_pause_button;
-static GBitmap *s_res_next_button;
 static GFont s_res_gothic_28;
 static GFont s_res_roboto_condensed_21;
 static GFont s_res_bitham_42_medium_numbers;
-static TextLayer *s_textlayer_1;
+static GBitmap *s_res_stop_button;
+static GBitmap *s_res_play_pause_button;
+static GBitmap *s_res_next_button;
+static TextLayer *next_move_name;
 static TextLayer *paused_text;
 static TextLayer *move_name;
 static TextLayer *move_value;
@@ -32,18 +34,18 @@ static void initialise_ui(void) {
   #endif
   
   s_res_gothic_18 = fonts_get_system_font(FONT_KEY_GOTHIC_18);
-  s_res_stop_button = gbitmap_create_with_resource(RESOURCE_ID_STOP_BUTTON);
-  s_res_play_pause_button = gbitmap_create_with_resource(RESOURCE_ID_PLAY_PAUSE_BUTTON);
-  s_res_next_button = gbitmap_create_with_resource(RESOURCE_ID_NEXT_BUTTON);
   s_res_gothic_28 = fonts_get_system_font(FONT_KEY_GOTHIC_28);
   s_res_roboto_condensed_21 = fonts_get_system_font(FONT_KEY_ROBOTO_CONDENSED_21);
   s_res_bitham_42_medium_numbers = fonts_get_system_font(FONT_KEY_BITHAM_42_MEDIUM_NUMBERS);
-  // s_textlayer_1
-  s_textlayer_1 = text_layer_create(GRect(2, 132, 121, 19));
-  text_layer_set_text(s_textlayer_1, "Next: Pushups....");
-  text_layer_set_text_alignment(s_textlayer_1, GTextAlignmentCenter);
-  text_layer_set_font(s_textlayer_1, s_res_gothic_18);
-  layer_add_child(window_get_root_layer(s_window), (Layer *)s_textlayer_1);
+  s_res_stop_button = gbitmap_create_with_resource(RESOURCE_ID_STOP_BUTTON);
+  s_res_play_pause_button = gbitmap_create_with_resource(RESOURCE_ID_PLAY_PAUSE_BUTTON);
+  s_res_next_button = gbitmap_create_with_resource(RESOURCE_ID_NEXT_BUTTON);
+  // next_move_name
+  next_move_name = text_layer_create(GRect(2, 132, 121, 19));
+  text_layer_set_text(next_move_name, "Next: Pushups....");
+  text_layer_set_text_alignment(next_move_name, GTextAlignmentCenter);
+  text_layer_set_font(next_move_name, s_res_gothic_18);
+  layer_add_child(window_get_root_layer(s_window), (Layer *)next_move_name);
   
   // paused_text
   paused_text = text_layer_create(GRect(32, 103, 69, 34));
@@ -78,7 +80,7 @@ static void initialise_ui(void) {
 
 static void destroy_ui(void) {
   window_destroy(s_window);
-  text_layer_destroy(s_textlayer_1);
+  text_layer_destroy(next_move_name);
   text_layer_destroy(paused_text);
   text_layer_destroy(move_name);
   text_layer_destroy(move_value);
@@ -94,16 +96,55 @@ void win_move_set_move(Move* move_win) {
   move = move_win; 
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Move name: %s", move->name); 
   text_layer_set_text(move_name, move->name); 
-  if (move->type == MOVE_TYPE_TIMER) { 
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Timer move"); 
-    action_bar_layer_set_icon(move_controls, BUTTON_ID_SELECT, s_res_play_pause_button);
-    action_bar_layer_set_click_config_provider(move_controls, timer_move_controls_click_config_provider); 
-  }
-  if (move->type == MOVE_TYPE_REPS) { 
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "reps move"); 
-    action_bar_layer_set_icon(move_controls, BUTTON_ID_SELECT, NULL);
-    action_bar_layer_set_click_config_provider(move_controls, reps_move_controls_click_config_provider); 
-  }
+  if (move->type == MOVE_TYPE_TIMER) setup_timer_move(); 
+  if (move->type == MOVE_TYPE_REPS)  setup_rep_move(); 
+}
+
+/**
+* Prepare window for a timer move to begin. 
+*/ 
+void setup_timer_move() { 
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Timer move"); 
+  window_set_background_color(s_window, GColorWhite);
+  action_bar_layer_set_icon(move_controls, BUTTON_ID_SELECT, s_res_play_pause_button);
+  
+  text_layer_set_text_color(paused_text, GColorBlack);
+  text_layer_set_background_color(paused_text, GColorWhite);
+  
+  text_layer_set_text_color(move_name, GColorBlack);
+  text_layer_set_background_color(move_name, GColorWhite);
+  
+  text_layer_set_text_color(move_value, GColorBlack);
+  text_layer_set_background_color(move_value, GColorWhite);
+  
+  text_layer_set_text_color(next_move_name, GColorBlack);
+  text_layer_set_background_color(next_move_name, GColorWhite);
+  
+  
+  action_bar_layer_set_click_config_provider(move_controls, timer_move_controls_click_config_provider); 
+}
+
+/**
+* Prepare window for a rep move to begin. 
+*/ 
+void setup_rep_move() { 
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "reps move"); 
+  window_set_background_color(s_window, GColorBlack);
+  action_bar_layer_set_icon(move_controls, BUTTON_ID_SELECT, NULL);
+  
+  text_layer_set_text_color(paused_text, GColorWhite);
+  text_layer_set_background_color(paused_text, GColorBlack);
+  
+  text_layer_set_text_color(move_name, GColorWhite);
+  text_layer_set_background_color(move_name, GColorBlack);
+  
+  text_layer_set_text_color(move_value, GColorWhite);
+  text_layer_set_background_color(move_value, GColorBlack);
+  
+  text_layer_set_text_color(next_move_name, GColorWhite);
+  text_layer_set_background_color(next_move_name, GColorBlack);
+  
+  action_bar_layer_set_click_config_provider(move_controls, reps_move_controls_click_config_provider); 
 }
 
 void timer_move_controls_click_config_provider(void* context) { 
