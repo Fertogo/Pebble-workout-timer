@@ -74,7 +74,7 @@ static void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, v
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Button Clicked: %i", cell_index->row);  
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Workout requested %s", workouts_info[cell_index->row]);
   char* workout_title = workouts_info[cell_index->row]; 
-  message_helper_request_workout(workout_title); 
+  workout_request_workout(workout_title); 
   menu_layer_reload_data(menu_workouts); //Reload the menu 
   vibes_short_pulse(); 
 }

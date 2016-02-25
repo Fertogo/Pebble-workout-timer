@@ -4,6 +4,8 @@
 #include "win_move.h"
 #include "win_main.h"
 #include "message_helper.h"
+#include "win_loading.h"
+
 
 
 static void workout_finished(Workout* workout);
@@ -26,7 +28,6 @@ void workout_add_move(Workout* workout, Move* move) {
 }
 
 void workout_start(Workout* workout){ 
-//   message_helper_request_workout(workout); 
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Starting workout");
   
   Move* first_move = linked_list_get(workout->moves, 0); 
@@ -63,6 +64,15 @@ static void workout_finished(Workout* workout){
   //TODO show congrats screen
 }
 
+/**
+* Request a workout from the phone to start on the Pebble
+* @param: char* workout_title: Title of workouts as is saved on the Pebble and the Phone.
+*/
+void workout_request_workout(char* workout_title) { 
+  show_win_loading(); 
+  message_helper_request_workout(workout_title); 
+}
+
 //Called with response from phone after requesting a workout
 void workout_parse_message(char*header, LinkedRoot* data) { 
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Parsing Workout Message"); 
@@ -73,7 +83,8 @@ void workout_parse_message(char*header, LinkedRoot* data) {
   
   Workout* workout = workout_create(workout_name); 
 
-  parse_moves_message(workout, data); 
+  parse_moves_message(workout, data);
+  hide_win_loading(); 
   workout_start(workout); 
 }
 

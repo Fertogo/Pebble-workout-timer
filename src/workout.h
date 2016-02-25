@@ -19,5 +19,7 @@ void workout_move_finished(Move* move);
 
 void workout_parse_message(char* header, LinkedRoot* data);
 
+void workout_request_workout(char* workout_title); 
+
 Workout* workout_create(char* name);
 
