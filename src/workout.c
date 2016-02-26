@@ -76,6 +76,19 @@ void workout_request_workout(char* workout_title) {
   message_helper_request_workout(workout_title); 
 }
 
+/**
+* Get the name of the next move in the workout
+* @param: Move* current_move: current move in workout.
+* @returns: char* with the name of the next move. 
+*/
+char* workout_get_next_move_name(Move* current_move){ 
+  uint8_t index = current_move->id;
+  Workout* workout = current_move->workout; 
+  if (index >= linked_list_count(workout->moves)-1) return "Last move!";
+  Move* next_move = linked_list_get(workout->moves, index+1); 
+  return next_move->name; 
+}
+
 //Called with response from phone after requesting a workout
 void workout_parse_message(char*header, LinkedRoot* data) { 
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Parsing Workout Message"); 

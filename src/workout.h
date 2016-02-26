@@ -23,3 +23,4 @@ void workout_request_workout(char* workout_title);
 
 Workout* workout_create(char* name);
 
+char* workout_get_next_move_name(Move* move); 

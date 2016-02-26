@@ -123,6 +123,7 @@ static void update_move_value(Move* move) {
 
 void move_start(Move* move){ 
   move->status = MOVE_STATUS_RUNNING; 
+  win_move_set_next_move_name(workout_get_next_move_name(move)); 
   switch(move->type) { 
     case MOVE_TYPE_TIMER: 
       move->current_value = move->length;

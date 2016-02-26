@@ -14,7 +14,7 @@ void setup_rep_move();
 
 // BEGIN AUTO-GENERATED UI CODE; DO NOT MODIFY
 static Window *s_window;
-static GFont s_res_gothic_18;
+static GFont s_res_gothic_14;
 static GFont s_res_gothic_28;
 static GFont s_res_roboto_condensed_21;
 static GFont s_res_bitham_42_medium_numbers;
@@ -26,6 +26,7 @@ static TextLayer *paused_text;
 static TextLayer *move_name;
 static TextLayer *move_value;
 static ActionBarLayer *move_controls;
+static TextLayer *next;
 
 static void initialise_ui(void) {
   s_window = window_create();
@@ -33,7 +34,7 @@ static void initialise_ui(void) {
     window_set_fullscreen(s_window, false);
   #endif
   
-  s_res_gothic_18 = fonts_get_system_font(FONT_KEY_GOTHIC_18);
+  s_res_gothic_14 = fonts_get_system_font(FONT_KEY_GOTHIC_14);
   s_res_gothic_28 = fonts_get_system_font(FONT_KEY_GOTHIC_28);
   s_res_roboto_condensed_21 = fonts_get_system_font(FONT_KEY_ROBOTO_CONDENSED_21);
   s_res_bitham_42_medium_numbers = fonts_get_system_font(FONT_KEY_BITHAM_42_MEDIUM_NUMBERS);
@@ -41,14 +42,15 @@ static void initialise_ui(void) {
   s_res_play_pause_button = gbitmap_create_with_resource(RESOURCE_ID_PLAY_PAUSE_BUTTON);
   s_res_next_button = gbitmap_create_with_resource(RESOURCE_ID_NEXT_BUTTON);
   // next_move_name
-  next_move_name = text_layer_create(GRect(2, 132, 121, 19));
-  text_layer_set_text(next_move_name, "Next: Pushups....");
-  text_layer_set_text_alignment(next_move_name, GTextAlignmentCenter);
-  text_layer_set_font(next_move_name, s_res_gothic_18);
+  next_move_name = text_layer_create(GRect(37, 136, 85, 15));
+  text_layer_set_background_color(next_move_name, GColorClear);
+  text_layer_set_text(next_move_name, "Workout dsg fg sfdg ");
+  text_layer_set_font(next_move_name, s_res_gothic_14);
   layer_add_child(window_get_root_layer(s_window), (Layer *)next_move_name);
   
   // paused_text
-  paused_text = text_layer_create(GRect(32, 103, 69, 34));
+  paused_text = text_layer_create(GRect(27, 97, 69, 34));
+  text_layer_set_background_color(paused_text, GColorClear);
   text_layer_set_text(paused_text, "Paused");
   text_layer_set_text_alignment(paused_text, GTextAlignmentCenter);
   text_layer_set_font(paused_text, s_res_gothic_28);
@@ -56,6 +58,7 @@ static void initialise_ui(void) {
   
   // move_name
   move_name = text_layer_create(GRect(8, -1, 108, 64));
+  text_layer_set_background_color(move_name, GColorClear);
   text_layer_set_text(move_name, "Workout Name");
   text_layer_set_text_alignment(move_name, GTextAlignmentCenter);
   text_layer_set_font(move_name, s_res_roboto_condensed_21);
@@ -63,7 +66,8 @@ static void initialise_ui(void) {
   
   // move_value
   move_value = text_layer_create(GRect(7, 54, 111, 48));
-  text_layer_set_text(move_value, "1:500");
+  text_layer_set_background_color(move_value, GColorClear);
+  text_layer_set_text(move_value, "1:50");
   text_layer_set_text_alignment(move_value, GTextAlignmentCenter);
   text_layer_set_font(move_value, s_res_bitham_42_medium_numbers);
   layer_add_child(window_get_root_layer(s_window), (Layer *)move_value);
@@ -76,6 +80,12 @@ static void initialise_ui(void) {
   action_bar_layer_set_icon(move_controls, BUTTON_ID_SELECT, s_res_play_pause_button);
   action_bar_layer_set_icon(move_controls, BUTTON_ID_DOWN, s_res_next_button);
   layer_add_child(window_get_root_layer(s_window), (Layer *)move_controls);
+  
+  // next
+  next = text_layer_create(GRect(3, 136, 35, 18));
+  text_layer_set_background_color(next, GColorClear);
+  text_layer_set_text(next, "Next:");
+  layer_add_child(window_get_root_layer(s_window), (Layer *)next);
 }
 
 static void destroy_ui(void) {
@@ -85,6 +95,7 @@ static void destroy_ui(void) {
   text_layer_destroy(move_name);
   text_layer_destroy(move_value);
   action_bar_layer_destroy(move_controls);
+  text_layer_destroy(next);
   gbitmap_destroy(s_res_stop_button);
   gbitmap_destroy(s_res_play_pause_button);
   gbitmap_destroy(s_res_next_button);
@@ -109,16 +120,9 @@ void setup_timer_move() {
   action_bar_layer_set_icon(move_controls, BUTTON_ID_SELECT, s_res_play_pause_button);
   
   text_layer_set_text_color(paused_text, GColorBlack);
-  text_layer_set_background_color(paused_text, GColorWhite);
-  
   text_layer_set_text_color(move_name, GColorBlack);
-  text_layer_set_background_color(move_name, GColorWhite);
-  
   text_layer_set_text_color(move_value, GColorBlack);
-  text_layer_set_background_color(move_value, GColorWhite);
-  
   text_layer_set_text_color(next_move_name, GColorBlack);
-  text_layer_set_background_color(next_move_name, GColorWhite);
   
   
   action_bar_layer_set_click_config_provider(move_controls, timer_move_controls_click_config_provider); 
@@ -133,16 +137,9 @@ void setup_rep_move() {
   action_bar_layer_set_icon(move_controls, BUTTON_ID_SELECT, NULL);
   
   text_layer_set_text_color(paused_text, GColorWhite);
-  text_layer_set_background_color(paused_text, GColorBlack);
-  
   text_layer_set_text_color(move_name, GColorWhite);
-  text_layer_set_background_color(move_name, GColorBlack);
-  
   text_layer_set_text_color(move_value, GColorWhite);
-  text_layer_set_background_color(move_value, GColorBlack);
-  
   text_layer_set_text_color(next_move_name, GColorWhite);
-  text_layer_set_background_color(next_move_name, GColorBlack);
   
   action_bar_layer_set_click_config_provider(move_controls, reps_move_controls_click_config_provider); 
 }
@@ -187,6 +184,11 @@ void win_move_set_value(char * new_value) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Winmove set value"); 
   text_layer_set_text(move_value, new_value); 
 }
+
+void win_move_set_next_move_name(char* name){ 
+  text_layer_set_text(next_move_name, name);
+} 
+
 
 void show_win_move(void) {
   initialise_ui();
