@@ -1,9 +1,9 @@
 #include <pebble.h>
 
 #include "move.h"
-#include "win_move.h"
+#include "windows/win_move.h"
 #include "workout.h"
-#include "win_main.h"
+#include "windows/win_main.h"
 
 #include "message_helper.h"
 

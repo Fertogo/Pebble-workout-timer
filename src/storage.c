@@ -1,6 +1,6 @@
 #include <pebble.h>
 #include "storage.h"
-#include "win_main.h"
+#include "windows/win_main.h"
 
 #define PERSIST_KEY_WORKOUTS_ROOT 200
 

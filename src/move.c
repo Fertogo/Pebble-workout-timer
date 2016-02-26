@@ -1,7 +1,7 @@
 #include "move.h"
 #include <pebble.h>
 #include "workout.h"
-#include "win_move.h"
+#include "windows/win_move.h"
 
 
 static void timer_tick(void* context); 

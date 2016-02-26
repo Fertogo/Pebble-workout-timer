@@ -1,10 +1,10 @@
 #include <pebble.h>
 #include "linked-list.h"
 #include "workout.h"
-#include "win_move.h"
-#include "win_main.h"
+#include "windows/win_move.h"
+#include "windows/win_main.h"
 #include "message_helper.h"
-#include "win_loading.h"
+#include "windows/win_loading.h"
 
 
 

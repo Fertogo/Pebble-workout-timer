@@ -1,7 +1,7 @@
 #include <pebble.h>
 #include "win_main.h"
 #include "message_helper.h"
-#include "win_instructions.h"
+#include "windows/win_instructions.h"
 
 #include "storage.h"
 
