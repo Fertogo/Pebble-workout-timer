@@ -90,9 +90,10 @@ void message_helper_finish_workout(Workout* workout) {
 }
 
 void message_helper_send_message(int type, char* message) { 
-  
+
   
   APP_LOG(APP_LOG_LEVEL_DEBUG,"Sending message... %s %i", message, type);
+  
   
   if (!jsReady) { 
     MessageData* message_data = malloc(sizeof(MessageData)); 

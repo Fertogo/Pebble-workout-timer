@@ -69,7 +69,10 @@ static void workout_finished(Workout* workout){
 * @param: char* workout_title: Title of workouts as is saved on the Pebble and the Phone.
 */
 void workout_request_workout(char* workout_title) { 
-  show_win_loading(); 
+  show_win_loading();
+  if (!bluetooth_connection_service_peek()){ 
+     win_loading_show_error("Please connect Pebble to Phone then try again."); 
+  }
   message_helper_request_workout(workout_title); 
 }
 

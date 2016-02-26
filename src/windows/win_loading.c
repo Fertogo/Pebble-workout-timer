@@ -14,8 +14,9 @@ static void initialise_ui(void) {
   
   s_res_roboto_condensed_21 = fonts_get_system_font(FONT_KEY_ROBOTO_CONDENSED_21);
   // loading
-  loading = text_layer_create(GRect(31, 72, 86, 24));
+  loading = text_layer_create(GRect(6, 45, 131, 120));
   text_layer_set_text(loading, "Loading...");
+  text_layer_set_text_alignment(loading, GTextAlignmentCenter);
   text_layer_set_font(loading, s_res_roboto_condensed_21);
   layer_add_child(window_get_root_layer(s_window), (Layer *)loading);
 }
@@ -36,6 +37,10 @@ void show_win_loading(void) {
     .unload = handle_window_unload,
   });
   window_stack_push(s_window, true);
+}
+
+void win_loading_show_error(char* error) { 
+  text_layer_set_text(loading, error); 
 }
 
 void hide_win_loading(void) {
