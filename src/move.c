@@ -39,7 +39,9 @@ Move* move_create(char* name, uint16_t length, MoveType type) {
 
 static void timer_cancel_tick(Move* move) { 
   if(!move) return; 
+  if (move->type != MOVE_TYPE_TIMER) return; 
   if (move->timer) { 
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Canceling timer");
     app_timer_cancel(move->timer); 
     move->timer = NULL; 
   }

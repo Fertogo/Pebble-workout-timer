@@ -2,6 +2,7 @@
 #include "linked-list.h"
 #include "workout.h"
 #include "windows/win_move.h"
+#include "windows/win_workout_finished.h"
 #include "windows/win_main.h"
 #include "message_helper.h"
 #include "windows/win_loading.h"
@@ -61,7 +62,9 @@ static void workout_finished(Workout* workout){
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Workout Finished"); 
   message_helper_finish_workout(workout); 
   
-  //TODO show congrats screen
+  show_win_workout_finished(); 
+  hide_win_move(); 
+  free(workout); 
 }
 
 /**
