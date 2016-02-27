@@ -13,6 +13,7 @@ void pause_play_move_click_handler(ClickRecognizerRef recognizer, void *context)
 
 void setup_timer_move(); 
 void setup_rep_move(); 
+static StatusBarLayer * status_bar;
 
 // BEGIN AUTO-GENERATED UI CODE; DO NOT MODIFY
 static Window *s_window;
@@ -33,7 +34,7 @@ static TextLayer *next;
 static void initialise_ui(void) {
   s_window = window_create();
   #ifndef PBL_SDK_3
-    window_set_fullscreen(s_window, false);
+    window_set_fullscreen(s_window, true);
   #endif
   
   s_res_gothic_14 = fonts_get_system_font(FONT_KEY_GOTHIC_14);
@@ -44,14 +45,14 @@ static void initialise_ui(void) {
   s_res_play_pause_button = gbitmap_create_with_resource(RESOURCE_ID_PLAY_PAUSE_BUTTON);
   s_res_next_button = gbitmap_create_with_resource(RESOURCE_ID_NEXT_BUTTON);
   // next_move_name
-  next_move_name = text_layer_create(GRect(37, 136, 85, 15));
+  next_move_name = text_layer_create(GRect(37, 147, 85, 15));
   text_layer_set_background_color(next_move_name, GColorClear);
   text_layer_set_text(next_move_name, "Workout dsg fg sfdg ");
   text_layer_set_font(next_move_name, s_res_gothic_14);
   layer_add_child(window_get_root_layer(s_window), (Layer *)next_move_name);
   
   // paused_text
-  paused_text = text_layer_create(GRect(27, 97, 69, 34));
+  paused_text = text_layer_create(GRect(25, 107, 78, 34));
   text_layer_set_background_color(paused_text, GColorClear);
   text_layer_set_text(paused_text, "Paused");
   text_layer_set_text_alignment(paused_text, GTextAlignmentCenter);
@@ -59,15 +60,15 @@ static void initialise_ui(void) {
   layer_add_child(window_get_root_layer(s_window), (Layer *)paused_text);
   
   // move_name
-  move_name = text_layer_create(GRect(8, -1, 108, 64));
+  move_name = text_layer_create(GRect(8, 20, 108, 49));
   text_layer_set_background_color(move_name, GColorClear);
-  text_layer_set_text(move_name, "Workout Name");
+  text_layer_set_text(move_name, "Workout Name asgf sadf");
   text_layer_set_text_alignment(move_name, GTextAlignmentCenter);
   text_layer_set_font(move_name, s_res_roboto_condensed_21);
   layer_add_child(window_get_root_layer(s_window), (Layer *)move_name);
   
   // move_value
-  move_value = text_layer_create(GRect(7, 54, 111, 48));
+  move_value = text_layer_create(GRect(5, 64, 111, 48));
   text_layer_set_background_color(move_value, GColorClear);
   text_layer_set_text(move_value, "1:50");
   text_layer_set_text_alignment(move_value, GTextAlignmentCenter);
@@ -84,7 +85,7 @@ static void initialise_ui(void) {
   layer_add_child(window_get_root_layer(s_window), (Layer *)move_controls);
   
   // next
-  next = text_layer_create(GRect(4, 136, 35, 18));
+  next = text_layer_create(GRect(4, 147, 35, 18));
   text_layer_set_background_color(next, GColorClear);
   text_layer_set_text(next, "Next:");
   layer_add_child(window_get_root_layer(s_window), (Layer *)next);
@@ -179,6 +180,7 @@ void pause_play_move_click_handler(ClickRecognizerRef recognizer, void *context)
 } 
 
 static void handle_window_unload(Window* window) {
+  status_bar_layer_destroy(status_bar); 
   destroy_ui();
 }
 
@@ -214,6 +216,8 @@ void win_move_set_next_move_name(char* name){
 
 void show_win_move(void) {
   initialise_ui();
+  status_bar = status_bar_layer_create();
+  layer_add_child(window_get_root_layer(s_window), status_bar_layer_get_layer(status_bar));
   window_set_window_handlers(s_window, (WindowHandlers) {
     .unload = handle_window_unload,
   });

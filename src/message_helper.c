@@ -73,7 +73,8 @@ static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
 
 void message_helper_init() { 
   APP_LOG(APP_LOG_LEVEL_INFO, "Message Helper Init");
-  app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
+  app_message_open(app_message_inbox_size_maximum(), APP_MESSAGE_OUTBOX_SIZE_MINIMUM + 500);
+
   // Register callbacks
   app_message_register_inbox_received(inbox_received_callback);
   app_message_register_inbox_dropped(inbox_dropped_callback);

@@ -28,7 +28,7 @@ function sendMessage(messageType, messageHeader, message) {
   message[0] = messageType; 
   message[1] = messageHeader; 
   console.log("sending message of type: " + messageType); 
-  MessageQueue.sendAppMessage(message, function(e) { console.log("send yes"); }, function(e){console.log("send no");});
+  MessageQueue.sendAppMessage(message, function(e) { console.log("send yes"); }, function(e){console.log("ERROR: " + e.error.message); console.log("send no"); });
 }
 function sendWorkout(workoutName, moves) {
   console.log("sending workout" + workoutName + " with moves: " + moves); 
@@ -135,7 +135,7 @@ function workoutCompleted(title){
   }
 
   else { 
-      var url = BASE_URL + '/user/workout/completed/' + encodeURIComponent(  Pebble.getAccountToken() )  + '/' + encodeURIComponent(window.localStorage.getItem("currentWorkoutName")) + "/none"; 
+      var url = BASE_URL + '/user/workout/completed/' + encodeURIComponent(  Pebble.getAccountToken() )  + '/' + encodeURIComponent(localStorage.getItem("currentWorkoutName")) + "/none"; 
       postWorkoutCompleted(url);
   }
   
@@ -144,16 +144,16 @@ function workoutCompleted(title){
 
 function postWorkoutCompleted(url){ 
   //Send request to server
-  console.log(url)
+  console.log(url);
   var req = new XMLHttpRequest();
   req.open('POST', url, true);
   req.onload = function(e) {
     if (req.readyState == 4 && req.status == 200) {
       if(req.status == 200) {
-        console.log("Workout recorded")
+        console.log("Workout recorded"); 
       } else { console.log('Error'); }
     }
-  }
+  }; 
   req.send(null);
 
 }
