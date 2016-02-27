@@ -5,18 +5,18 @@ var VERSION = "4.0";
 var MESSAGE_CHUNK_LENGTH = 100; 
 var MESSAGE_DELIMITER = "\t"; 
 
-
+var DEV_MODE = true; //Set to False before Shipping! 
 var BASE_URL = 'http://pebble.fernandotrujano.com';
-
 
 
 Pebble.addEventListener("ready", function(e){
   console.log("JS code running!"); 
   sendMessage("READY", "none", {}); 
 
-//  var moves = [{"type":"reps","value":3,"name":"Lunges 20"},{"type":"time","value":60,"name":"Next Bridges"},{"type":"reps","value":3,"name":"Bridges: 20"},{"type":"time","value":60,"name":"Next Barbell Deadlift"},{"type":"reps","value":3,"name":"Barbell Deadlift 12"},{"type":"time","value":60,"name":"Next Glutes Kickback"},{"type":"reps","value":4,"name":"Glutes Kickback 20"},{"type":"time","value":60,"name":"Next Standing Calf Raises"},{"type":"reps","value":3,"name":"Standing Calf Raises 20"},{"type":"time","value":60,"name":"Next Calf Press on Leg Press"},{"type":"reps","value":3,"name":"Calf Press on Leg Press 12"}]; 
-//   sendWorkout("WorkoutNameTest", moves); 
-//   parseAndAddWorkouts("REMOVEME"); 
+  if (DEV_MODE) { 
+    var sample_workout = '{"workouts":[{"moves":[{"name":"Move 1","value":6,"type":"time"},{"name":"Move 2","value":7,"type":"time"},{"name":"Move 3","value":7,"type":"time"}],"title":"Just Time"},{"moves":[{"name":"move 1","value":6,"type":"reps"},{"name":"move 2","value":5,"type":"reps"},{"name":"move 3","value":12,"type":"reps"}],"title":"Just reps"},{"moves":[{"name":"move 1","value":16,"type":"time"},{"name":"move 2 reps","value":4,"type":"reps"},{"name":"move 3 time","value":6,"type":"time"},{"name":"move 4 reps","value":14,"type":"reps"}],"title":"Both"}]}'; 
+    parseAndAddWorkouts(sample_workout); 
+  }
 });
 
 Pebble.addEventListener("showConfiguration", function(){ 
@@ -64,7 +64,6 @@ function parseAndAddWorkouts(jsonString) {
 
   var json; 
   json = JSON.parse(decodeURIComponent(jsonString));  
-//      json = JSON.parse('{"workouts":[{"moves":[{"name":"Move 1","value":6,"type":"time"},{"name":"Move 2","value":7,"type":"time"},{"name":"Move 3","value":7,"type":"time"}],"title":"Just Time"},{"moves":[{"name":"move 1","value":6,"type":"reps"},{"name":"move 2","value":5,"type":"reps"},{"name":"move 3","value":12,"type":"reps"}],"title":"Just reps"},{"moves":[{"name":"move 1","value":16,"type":"time"},{"name":"move 2 reps","value":4,"type":"reps"},{"name":"move 3 time","value":6,"type":"time"},{"name":"move 4 reps","value":14,"type":"reps"}],"title":"Both"}]}')
 
   var workoutTitle,moves, workoutInfo, messageIndex=2, message={}; 
 
