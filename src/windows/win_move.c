@@ -1,6 +1,8 @@
 #include <pebble.h>
 #include "win_move.h"
 
+#define NEXT_PADDING 3 //Padding between "next" and move name. 
+
 Move* move; 
 void timer_move_controls_click_config_provider(void* context);
 void reps_move_controls_click_config_provider(void* context);
@@ -82,7 +84,7 @@ static void initialise_ui(void) {
   layer_add_child(window_get_root_layer(s_window), (Layer *)move_controls);
   
   // next
-  next = text_layer_create(GRect(3, 136, 35, 18));
+  next = text_layer_create(GRect(4, 136, 35, 18));
   text_layer_set_background_color(next, GColorClear);
   text_layer_set_text(next, "Next:");
   layer_add_child(window_get_root_layer(s_window), (Layer *)next);
@@ -123,8 +125,8 @@ void setup_timer_move() {
   text_layer_set_text_color(move_name, GColorBlack);
   text_layer_set_text_color(move_value, GColorBlack);
   text_layer_set_text_color(next_move_name, GColorBlack);
-  
-  
+  text_layer_set_text_color(next, GColorBlack);
+
   action_bar_layer_set_click_config_provider(move_controls, timer_move_controls_click_config_provider); 
 }
 
@@ -140,7 +142,8 @@ void setup_rep_move() {
   text_layer_set_text_color(move_name, GColorWhite);
   text_layer_set_text_color(move_value, GColorWhite);
   text_layer_set_text_color(next_move_name, GColorWhite);
-  
+  text_layer_set_text_color(next, GColorWhite);
+ 
   action_bar_layer_set_click_config_provider(move_controls, reps_move_controls_click_config_provider); 
 }
 
@@ -187,6 +190,25 @@ void win_move_set_value(char * new_value) {
 
 void win_move_set_next_move_name(char* name){ 
   text_layer_set_text(next_move_name, name);
+  
+  //center next move
+  Layer *window_layer = window_get_root_layer(s_window);
+  int16_t window_size = layer_get_bounds(window_layer).size.w - ACTION_BAR_WIDTH;
+  int16_t next_size   = text_layer_get_content_size(next).w; 
+  int16_t move_size   = text_layer_get_content_size(next_move_name).w; 
+  
+  int16_t next_margin = (window_size - (next_size + move_size))/2;
+  int16_t move_margin = next_margin + next_size + NEXT_PADDING; 
+  
+  GRect old_next_frame = layer_get_frame(text_layer_get_layer(next)); 
+  GRect old_move_frame = layer_get_frame(text_layer_get_layer(next_move_name)); 
+  
+  GRect new_next_frame = GRect(next_margin, old_next_frame.origin.y, old_next_frame.size.w, old_next_frame.size.h); 
+  GRect new_move_frame = GRect(move_margin, old_move_frame.origin.y, old_move_frame.size.w, old_move_frame.size.h); 
+
+  layer_set_frame(text_layer_get_layer(next), new_next_frame); 
+  layer_set_frame(text_layer_get_layer(next_move_name), new_move_frame); 
+
 } 
 
 
