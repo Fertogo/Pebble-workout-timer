@@ -24,7 +24,7 @@ typedef struct Move {
   uint16_t length; 
   uint16_t current_value; 
   WakeupId wakeup_id; 
-  char name[30]; 
+  char name[40]; 
   
   struct Workout* workout; //Workout struct this move is part of.  
 } Move; 

@@ -135,8 +135,9 @@ void move_start(Move* move){
       move->current_value = move->length; 
   }
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Setting Move Name+Value %s - %i", move->name, move->current_value);
-  update_move_value(move); 
   win_move_set_move(move); 
+  update_move_value(move); 
+
   
 
 

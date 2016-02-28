@@ -3,6 +3,7 @@
 
 #define NEXT_PADDING 3 //Padding between "next" and move name. 
 
+
 Move* move; 
 void timer_move_controls_click_config_provider(void* context);
 void reps_move_controls_click_config_provider(void* context);
@@ -13,21 +14,24 @@ void pause_play_move_click_handler(ClickRecognizerRef recognizer, void *context)
 
 void setup_timer_move(); 
 void setup_rep_move(); 
+void initialized_custom_ui(); 
 static StatusBarLayer * status_bar;
+static GFont s_res_gothic_24_bold;
+static GFont s_res_gothic_18_bold; 
+
 
 // BEGIN AUTO-GENERATED UI CODE; DO NOT MODIFY
 static Window *s_window;
+static GFont s_res_roboto_bold_subset_49;
 static GFont s_res_gothic_14;
-static GFont s_res_gothic_28;
 static GFont s_res_roboto_condensed_21;
-static GFont s_res_bitham_42_medium_numbers;
 static GBitmap *s_res_stop_button;
 static GBitmap *s_res_play_pause_button;
 static GBitmap *s_res_next_button;
+static TextLayer *move_value;
 static TextLayer *next_move_name;
 static TextLayer *paused_text;
 static TextLayer *move_name;
-static TextLayer *move_value;
 static ActionBarLayer *move_controls;
 static TextLayer *next;
 
@@ -37,13 +41,20 @@ static void initialise_ui(void) {
     window_set_fullscreen(s_window, true);
   #endif
   
+  s_res_roboto_bold_subset_49 = fonts_get_system_font(FONT_KEY_ROBOTO_BOLD_SUBSET_49);
   s_res_gothic_14 = fonts_get_system_font(FONT_KEY_GOTHIC_14);
-  s_res_gothic_28 = fonts_get_system_font(FONT_KEY_GOTHIC_28);
   s_res_roboto_condensed_21 = fonts_get_system_font(FONT_KEY_ROBOTO_CONDENSED_21);
-  s_res_bitham_42_medium_numbers = fonts_get_system_font(FONT_KEY_BITHAM_42_MEDIUM_NUMBERS);
   s_res_stop_button = gbitmap_create_with_resource(RESOURCE_ID_STOP_BUTTON);
   s_res_play_pause_button = gbitmap_create_with_resource(RESOURCE_ID_PLAY_PAUSE_BUTTON);
   s_res_next_button = gbitmap_create_with_resource(RESOURCE_ID_NEXT_BUTTON);
+  // move_value
+  move_value = text_layer_create(GRect(0, 68, 115, 49));
+  text_layer_set_background_color(move_value, GColorClear);
+  text_layer_set_text(move_value, "1:50");
+  text_layer_set_text_alignment(move_value, GTextAlignmentCenter);
+  text_layer_set_font(move_value, s_res_roboto_bold_subset_49);
+  layer_add_child(window_get_root_layer(s_window), (Layer *)move_value);
+  
   // next_move_name
   next_move_name = text_layer_create(GRect(37, 147, 85, 15));
   text_layer_set_background_color(next_move_name, GColorClear);
@@ -52,28 +63,20 @@ static void initialise_ui(void) {
   layer_add_child(window_get_root_layer(s_window), (Layer *)next_move_name);
   
   // paused_text
-  paused_text = text_layer_create(GRect(25, 107, 78, 34));
+  paused_text = text_layer_create(GRect(0, 121, 115, 22));
   text_layer_set_background_color(paused_text, GColorClear);
   text_layer_set_text(paused_text, "Paused");
   text_layer_set_text_alignment(paused_text, GTextAlignmentCenter);
-  text_layer_set_font(paused_text, s_res_gothic_28);
+  text_layer_set_font(paused_text, s_res_roboto_condensed_21);
   layer_add_child(window_get_root_layer(s_window), (Layer *)paused_text);
   
   // move_name
-  move_name = text_layer_create(GRect(8, 20, 108, 49));
+  move_name = text_layer_create(GRect(0, 20, 115, 57));
   text_layer_set_background_color(move_name, GColorClear);
-  text_layer_set_text(move_name, "Workout Name asgf sadf");
+  text_layer_set_text(move_name, "Text layer");
   text_layer_set_text_alignment(move_name, GTextAlignmentCenter);
   text_layer_set_font(move_name, s_res_roboto_condensed_21);
   layer_add_child(window_get_root_layer(s_window), (Layer *)move_name);
-  
-  // move_value
-  move_value = text_layer_create(GRect(5, 64, 111, 48));
-  text_layer_set_background_color(move_value, GColorClear);
-  text_layer_set_text(move_value, "1:50");
-  text_layer_set_text_alignment(move_value, GTextAlignmentCenter);
-  text_layer_set_font(move_value, s_res_bitham_42_medium_numbers);
-  layer_add_child(window_get_root_layer(s_window), (Layer *)move_value);
   
   // move_controls
   move_controls = action_bar_layer_create();
@@ -93,10 +96,10 @@ static void initialise_ui(void) {
 
 static void destroy_ui(void) {
   window_destroy(s_window);
+  text_layer_destroy(move_value);
   text_layer_destroy(next_move_name);
   text_layer_destroy(paused_text);
   text_layer_destroy(move_name);
-  text_layer_destroy(move_value);
   action_bar_layer_destroy(move_controls);
   text_layer_destroy(next);
   gbitmap_destroy(s_res_stop_button);
@@ -109,7 +112,18 @@ void win_move_set_move(Move* move_win) {
   win_move_hide_pause(); 
   move = move_win; 
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Move name: %s", move->name); 
+  
   text_layer_set_text(move_name, move->name); 
+  text_layer_set_font(move_name, s_res_roboto_condensed_21);
+  //Adjust text based on font
+  int16_t max_height = layer_get_frame(text_layer_get_layer(move_name)).size.h; 
+  if (text_layer_get_content_size(move_name).h >= max_height) { 
+     text_layer_set_font(move_name, s_res_gothic_24_bold);
+     max_height = layer_get_frame(text_layer_get_layer(move_name)).size.h; 
+     if (text_layer_get_content_size(move_name).h >= max_height)  text_layer_set_font(move_name, s_res_gothic_18_bold);
+  }
+
+  //Type specific setup
   if (move->type == MOVE_TYPE_TIMER) setup_timer_move(); 
   if (move->type == MOVE_TYPE_REPS)  setup_rep_move(); 
 }
@@ -201,7 +215,7 @@ void win_move_set_next_move_name(char* name){
   
   int16_t next_margin = (window_size - (next_size + move_size))/2;
   int16_t move_margin = next_margin + next_size + NEXT_PADDING; 
-  
+    
   GRect old_next_frame = layer_get_frame(text_layer_get_layer(next)); 
   GRect old_move_frame = layer_get_frame(text_layer_get_layer(next_move_name)); 
   
@@ -213,10 +227,16 @@ void win_move_set_next_move_name(char* name){
 
 } 
 
+void initialize_custom_ui() { 
+  s_res_gothic_24_bold = fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD);
+  s_res_gothic_18_bold = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
+  text_layer_set_overflow_mode(move_name, GTextOverflowModeWordWrap); 
+  status_bar = status_bar_layer_create();
+}
 
 void show_win_move(void) {
   initialise_ui();
-  status_bar = status_bar_layer_create();
+  initialize_custom_ui(); 
   layer_add_child(window_get_root_layer(s_window), status_bar_layer_get_layer(status_bar));
   window_set_window_handlers(s_window, (WindowHandlers) {
     .unload = handle_window_unload,
