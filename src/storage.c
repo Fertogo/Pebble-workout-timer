@@ -59,14 +59,14 @@ char* storage_get(int key) {
   if (persist_exists(key)){
     persist_read_string(key, total, persist_get_size(key));
     char * s = total;
-    LOG(Read From Storage: Key: %i , Value: %s", key,s);
+    LOG("Read From Storage: Key: %i , Value: %s", key,s);
     return s;
   }
-  LOG(Reading from storage: Key %i not found", key);
+  LOG("Reading from storage: Key %i not found", key);
   return NULL;
 }
 
 void storage_set(int key, char* data) {
-  LOG(Saving to storage: Key: %i Data: %s", key, data);
+  LOG("Saving to storage: Key: %i Data: %s", key, data);
   persist_write_string(key, data);
 }

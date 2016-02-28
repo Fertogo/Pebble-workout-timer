@@ -5,7 +5,7 @@ var VERSION = "4.0";
 var MESSAGE_CHUNK_LENGTH = 100; 
 var MESSAGE_DELIMITER = "\t"; 
 
-var DEV_MODE = true; //Set to False before Shipping! 
+var DEV_MODE = false; //Set to false before Shipping! 
 var BASE_URL = 'http://pebble.fernandotrujano.com';
 
 

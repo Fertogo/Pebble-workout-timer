@@ -13,6 +13,12 @@
     "resources": {
         "media": [
             {
+                "file": "images/menuicon.png",
+                "menuIcon": true,
+                "name": "MENU_ICON",
+                "type": "bitmap"
+            },
+            {
                 "file": "images/Stopbtn.png",
                 "name": "STOP_BUTTON",
                 "type": "bitmap"
@@ -25,12 +31,6 @@
             {
                 "file": "images/Nextbtn.png",
                 "name": "NEXT_BUTTON",
-                "type": "bitmap"
-            },
-            {
-                "file": "images/menuicon.png",
-                "menuIcon": true,
-                "name": "MENU_ICON",
                 "type": "bitmap"
             }
         ]

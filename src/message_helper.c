@@ -5,7 +5,6 @@
 #include "storage.h"
 #include "linked-list.h"
 
-
 #define WORKOUT 0
 #define WORKOUT_DONE 1
 
@@ -19,6 +18,7 @@ void message_helper_send_message(int type, char* message);
 bool jsReady = false;
 static AppTimer *jsReadyTimer;
 static void jsReadyTimer_callback(void* data);
+static void try_resending_message(int type, char* message); 
 
 typedef struct MessageData {
   uint8_t type;
@@ -33,7 +33,6 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
   if (data_type) {
     char * type = data_type->value->cstring;
     LOG("Message received with type: %s", type);
-
 
     char* header = dict_find(iterator, MESSAGE_HEADER_INDEX)->value->cstring;
 
@@ -94,17 +93,10 @@ void message_helper_finish_workout(Workout* workout) {
 }
 
 void message_helper_send_message(int type, char* message) {
-
-
   LOG("Sending message... %s %i", message, type);
 
-
   if (!jsReady) {
-    MessageData* message_data = malloc(sizeof(MessageData));
-    message_data->message = message;
-    message_data->type = type;
-
-    jsReadyTimer = app_timer_register(1, jsReadyTimer_callback, message_data);
+    try_resending_message(type, message); 
     return;
   }
   DictionaryIterator *iter;
@@ -117,9 +109,17 @@ void message_helper_send_message(int type, char* message) {
       break;
     case APP_MSG_BUSY:  //There are pending messages (in or out) that need to be processed first, try resending in a bit
       LOG("BUSY");
-      //TODO
+      try_resending_message(type, message); 
       break;
    }
+}
+
+static void try_resending_message(int type, char* message) { 
+  MessageData* message_data = malloc(sizeof(MessageData));
+  message_data->message = message;
+  message_data->type = type;
+
+  jsReadyTimer = app_timer_register(1, jsReadyTimer_callback, message_data);
 }
 
 static AppTimer *jsReadyTimer;
@@ -131,12 +131,11 @@ static void jsReadyTimer_callback(void *data){
       MessageData* message_data = (MessageData *)(data);
       int type = message_data->type;
       char* message = message_data->message;
-      //TODO free message_data;
       free(message_data);
       message_helper_send_message(type,message);
     }
   else { //Wait 1/10 seconds
-    jsReadyTimer = app_timer_register(100 /* milliseconds */, jsReadyTimer_callback, data);
+    jsReadyTimer = app_timer_register(100, jsReadyTimer_callback, data);
   }
 
 }
