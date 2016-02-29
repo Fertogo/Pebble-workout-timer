@@ -1,6 +1,8 @@
 #include <pebble.h>
 #include "win_move.h"
+#include "win_main.h"
 #include "common.h"
+#include "workout.h"
 
 
 #define NEXT_PADDING 3 //Padding between "next" and move name.
@@ -12,6 +14,7 @@ void reps_move_controls_click_config_provider(void* context);
 void next_rep_click_handler(ClickRecognizerRef recognizer, void *context);
 void next_move_click_handler(ClickRecognizerRef recognizer, void *context);
 void stop_move_click_handler(ClickRecognizerRef recognizer, void *context);
+void back_click_handler(ClickRecognizerRef recognizer, void *context); 
 void pause_play_move_click_handler(ClickRecognizerRef recognizer, void *context);
 
 void setup_timer_move();
@@ -114,7 +117,6 @@ void win_move_set_move(Move* move_win) {
   win_move_hide_pause();
   move = move_win;
   LOG("Move name: %s", move->name);
-
   text_layer_set_text(move_name, move->name);
   text_layer_set_font(move_name, s_res_roboto_condensed_21);
   //Adjust text based on font
@@ -124,6 +126,7 @@ void win_move_set_move(Move* move_win) {
      max_height = layer_get_frame(text_layer_get_layer(move_name)).size.h;
      if (text_layer_get_content_size(move_name).h >= max_height)  text_layer_set_font(move_name, s_res_gothic_18_bold);
   }
+
 
   //Type specific setup
   if (move->type == MOVE_TYPE_TIMER) setup_timer_move();
@@ -161,6 +164,7 @@ void setup_rep_move() {
   text_layer_set_text_color(next_move_name, GColorWhite);
   text_layer_set_text_color(next, GColorWhite);
 
+
   action_bar_layer_set_click_config_provider(move_controls, reps_move_controls_click_config_provider);
 }
 
@@ -168,12 +172,14 @@ void timer_move_controls_click_config_provider(void* context) {
   window_single_click_subscribe(BUTTON_ID_DOWN, (ClickHandler) next_move_click_handler);
   window_single_click_subscribe(BUTTON_ID_UP, (ClickHandler) stop_move_click_handler);
   window_single_click_subscribe(BUTTON_ID_SELECT, (ClickHandler) pause_play_move_click_handler);
+  window_single_click_subscribe(BUTTON_ID_BACK, (ClickHandler) back_click_handler);
 }
 void reps_move_controls_click_config_provider(void* context) {
   window_long_click_subscribe(BUTTON_ID_DOWN, 1000, (ClickHandler) next_move_click_handler, NULL);
   window_single_click_subscribe(BUTTON_ID_DOWN, (ClickHandler) next_rep_click_handler);
   window_single_click_subscribe(BUTTON_ID_UP, (ClickHandler) stop_move_click_handler);
-  window_single_click_subscribe(BUTTON_ID_SELECT, (ClickHandler) next_rep_click_handler);
+  window_single_click_subscribe(BUTTON_ID_SELECT, (ClickHandler) next_rep_click_handler);  
+  window_single_click_subscribe(BUTTON_ID_BACK, (ClickHandler) back_click_handler);
 }
 
 //Click Handlers
@@ -186,6 +192,7 @@ void next_move_click_handler(ClickRecognizerRef recognizer, void *context) {
 }
 void stop_move_click_handler(ClickRecognizerRef recognizer, void *context) {
   move_stop(move);
+  workout_stop(move->workout);
   hide_win_move();
 }
 void pause_play_move_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -194,6 +201,16 @@ void pause_play_move_click_handler(ClickRecognizerRef recognizer, void *context)
 
   move_timer_pause_or_resume(move);
 }
+
+void back_click_handler(ClickRecognizerRef recognizer, void *context) { 
+  LOG("Back button clicked"); 
+  hide_win_main(); 
+  workout_save_current_move(move); 
+  move_stop(move); 
+  hide_win_move();
+} 
+
+
 
 static void handle_window_unload(Window* window) {
   status_bar_layer_destroy(status_bar);

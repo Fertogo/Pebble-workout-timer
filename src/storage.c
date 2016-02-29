@@ -5,6 +5,7 @@
 #include "windows/win_main.h"
 
 #define PERSIST_KEY_WORKOUTS_ROOT 200
+#define PERSIST_SAVED_MOVE 100
 
 
 char* storage_get(int key);
@@ -69,4 +70,22 @@ char* storage_get(int key) {
 void storage_set(int key, char* data) {
   LOG("Saving to storage: Key: %i Data: %s", key, data);
   persist_write_string(key, data);
+}
+
+void storage_save_current_move(SavedMove* saved_move) { 
+  persist_write_data(PERSIST_SAVED_MOVE, saved_move, sizeof(SavedMove));
+}
+SavedMove* storage_get_current_move() { 
+  if (persist_exists(PERSIST_SAVED_MOVE)){ 
+    SavedMove* saved_moved = malloc(sizeof(SavedMove));
+    persist_read_data(PERSIST_SAVED_MOVE, saved_moved, sizeof(SavedMove));
+    return saved_moved; 
+  }
+  return NULL; 
+}
+
+void storage_reset_current_move() { 
+  if (persist_exists(PERSIST_SAVED_MOVE)) { 
+    persist_delete(PERSIST_SAVED_MOVE); 
+  }
 }

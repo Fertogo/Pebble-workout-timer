@@ -37,10 +37,11 @@ void move_rep_next(Move* move);
 void move_timer_pause_or_resume(Move* move); 
 void move_finish(Move* move); 
 void move_stop(Move* move); 
+Move* move_initialize(Move* move); 
 
 
 void move_value_str(uint16_t move_value, MoveType move_type, char* str, int str_len);
-Move* move_create(char* name, uint16_t length, MoveType type);
+Move* move_create(char* name, uint16_t length, MoveType type, uint8_t id);
 
 
 

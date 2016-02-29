@@ -9,6 +9,7 @@
 static void timer_tick(void* context);
 static void timer_schedule_tick(Move* move);
 static void timer_cancel_tick(Move* move);
+static void timer_cancel_wakeup(Move* move); 
 static void update_move_value(Move* move);
 
 
@@ -30,11 +31,12 @@ void move_value_str(uint16_t move_value, MoveType move_type, char* str, int str_
   }
 }
 
-Move* move_create(char* name, uint16_t length, MoveType type) {
+Move* move_create(char* name, uint16_t length, MoveType type, uint8_t index) {
   Move* move = malloc(sizeof(Move));
   move->type = type;
   move->length = length;
   move->status = MOVE_STATUS_QUEUED;
+  move->index = index; 
   strcpy(move->name, name);
   return move;
 }
@@ -49,18 +51,27 @@ static void timer_cancel_tick(Move* move) {
   }
 }
 
+static void timer_cancel_wakeup(Move* move) {
+  if (!move) return;
+  if (move->wakeup_id <= 0) return;
+  wakeup_cancel(move->wakeup_id);
+  move->wakeup_id = -1;
+}
+
 static void timer_tick(void* context) {
   Move* move = (Move*)context;
   if (move->type != MOVE_TYPE_TIMER) return;
 
   move->timer = NULL;
+  if (move->current_value <= 0) {
+    move_finish(move);
+    return;
+  }
   move->current_value -= 1;
   LOG("Timer Tick %i", (int)move->current_value);
   move_print(move);
   update_move_value(move);
-  if (move->current_value <= 0) {
-    move_finish(move);
-  }
+
   if (move->status == MOVE_STATUS_RUNNING) {
     timer_schedule_tick(move); //Only schedule new tick if timer is supposed to be running!
   }
@@ -125,29 +136,26 @@ static void update_move_value(Move* move) {
   free(move_value);
 }
 
-void move_start(Move* move){
+//Initialize a move
+Move* move_initialize(Move* move) { 
+  INFO("Initializing new move");
   move->status = MOVE_STATUS_RUNNING;
+  move->current_value = move->length;
+  move_print(move); 
+  return move; 
+}
+
+void move_start(Move* move){
   win_move_set_next_move_name(workout_get_next_move_name(move));
-  switch(move->type) {
-    case MOVE_TYPE_TIMER:
-      move->current_value = move->length;
-      timer_schedule_tick(move);
-      break;
-    case MOVE_TYPE_REPS:
-      move->current_value = move->length;
-  }
   LOG("Setting Move Name+Value %s - %i", move->name, move->current_value);
   win_move_set_move(move);
   update_move_value(move);
-
-
-
-
-  //TODO Schedule wakeup
+  if (move->status == MOVE_STATUS_PAUSED) move_timer_pause(move); 
+  else if (move->type == MOVE_TYPE_TIMER) timer_schedule_tick(move); 
 }
 
 //TODO - Remove
 // Temp function
 void move_print(Move* move) {
-  LOG("Move. Length: %i, Type: %i, Title: %s, Current_value: %i", (int)move->length, move->type, move->name, (int)move->current_value);
+  LOG("Move. Length: %i, Type: %i, Title: %s, Current_value: %i, Index: %i, Status: %i", (int)move->length, move->type, move->name, (int)move->current_value, (int)move->index, move->status);
 }

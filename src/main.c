@@ -23,8 +23,8 @@ static void init(void) {
   LOG("C Code - Init");
   message_helper_init();
   win_main_init();
+  workout_restore();
 }
 
 static void deinit(void) {
-  //TODO Save currently running move
 }
