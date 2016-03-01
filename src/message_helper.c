@@ -1,3 +1,10 @@
+/* 
+Message helper of Custom Workout Timer. v4.0
+Enables communication between phone and Pebble by sending messages and receiving, parsing and forwarding messages. 
+Copyright © 2016 Fernando Trujano
+                 trujano@mit.edu
+*/
+
 #include <pebble.h>
 #include "common.h"
 
@@ -15,10 +22,12 @@
 
 
 void message_helper_send_message(int type, char* message);
+static void try_resending_message(int type, char* message); 
+
 bool jsReady = false;
 static AppTimer *jsReadyTimer;
 static void jsReadyTimer_callback(void* data);
-static void try_resending_message(int type, char* message); 
+static AppTimer *jsReadyTimer;
 
 typedef struct MessageData {
   uint8_t type;
@@ -26,10 +35,15 @@ typedef struct MessageData {
 } MessageData;
 
 
+/**
+* Parses messages received from phone and fowards them to correct class for processing
+* @params: (see Pebble API for details)
+*/
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   LOG("Message received!");
   Tuple *data_type = dict_find(iterator, MESSAGE_TYPE_INDEX);
 
+  //Parse message
   if (data_type) {
     char * type = data_type->value->cstring;
     LOG("Message received with type: %s", type);
@@ -84,14 +98,29 @@ void message_helper_init() {
   app_message_register_outbox_sent(outbox_sent_callback);
 }
 
+/**
+* Requests workout information from the phone
+* @param String: workout_title: Title of workout to request
+* @returns void, but the phone should reply back with a MOVES message after processing
+*/
 void message_helper_request_workout(char* workout_title) {
   message_helper_send_message(WORKOUT, workout_title);
 }
 
+/**
+* Let's the phone know that a workout is finished
+* @param Workout: workout: Workout struct that just finished
+* @returns void and the phone will NOT reply back with data. 
+*/
 void message_helper_finish_workout(Workout* workout) {
   message_helper_send_message(WORKOUT_DONE, workout->name);
 }
 
+/**
+* Sends a message to the phone, retrying if the phone is busy or not ready yet. 
+* @param int: type: Message Type being sent. Should match PebbleKit JS message keys. 
+* @param message: String: Message to send to phone
+*/
 void message_helper_send_message(int type, char* message) {
   LOG("Sending message... %s %i", message, type);
 
@@ -114,6 +143,10 @@ void message_helper_send_message(int type, char* message) {
    }
 }
 
+/**
+* Retries sending a message at a future time
+* @params (see message_helper_send_message) for params
+*/
 static void try_resending_message(int type, char* message) { 
   MessageData* message_data = malloc(sizeof(MessageData));
   message_data->message = message;
@@ -122,7 +155,10 @@ static void try_resending_message(int type, char* message) {
   jsReadyTimer = app_timer_register(1, jsReadyTimer_callback, message_data);
 }
 
-static AppTimer *jsReadyTimer;
+
+/**
+* Helper function for try_resending_message
+*/
 static void jsReadyTimer_callback(void *data){
     LOG("Trying to send message, phone isn't ready yet!");
 

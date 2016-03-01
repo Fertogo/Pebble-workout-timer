@@ -1,6 +1,6 @@
 #pragma once
 #include <pebble.h>
-
+#define MOVE_NAME_SIZE 40
 
 typedef enum {
   MOVE_TYPE_TIMER = 0, 
@@ -24,7 +24,7 @@ typedef struct Move {
   uint16_t length; 
   uint16_t current_value; 
   WakeupId wakeup_id; 
-  char name[40]; 
+  char name[MOVE_NAME_SIZE]; 
   
   struct Workout* workout; //Workout struct this move is part of.  
 } Move; 
