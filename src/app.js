@@ -13,7 +13,7 @@ var MESSAGE_CHUNK_LENGTH = 100;
 var MESSAGE_DELIMITER = "\t"; 
 var MESSAGE_DATA_ROOT = 2; 
 
-var DEV_MODE = true; //Set to false before Shipping! 
+var DEV_MODE = false; //Set to false before Shipping! 
 var BASE_URL = 'http://pebble.fernandotrujano.com';
 
 
