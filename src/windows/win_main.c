@@ -1,3 +1,10 @@
+/* 
+Main Window | Custom Workout Timer. v4.0
+Displays saved workouts and requests them from phone when selected
+Copyright © 2016 Fernando Trujano
+                 trujano@mit.edu
+*/
+
 #include <pebble.h>
 #include "common.h"
 
@@ -82,6 +89,9 @@ static void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, v
   vibes_short_pulse();
 }
 
+/**
+* Extra initialization for menu
+*/ 
 void initialize_menu(void) {
   #ifdef PBL_COLOR
      menu_layer_set_highlight_colors(menu_workouts,GColorCobaltBlue ,GColorWhite );
@@ -124,6 +134,9 @@ void hide_win_main(void) {
   window_stack_remove(s_window, true);
 }
 
+/**
+* Refreshes data on the menu
+*/
 void win_main_refresh(void) {
   if (!window_is_loaded(s_window)){
     //This happens on first use when instruction window was shown instead.
@@ -134,6 +147,10 @@ void win_main_refresh(void) {
   win_main_parse_workouts();
   menu_layer_reload_data(menu_workouts); //Reload the menu
 }
+
+/**
+* Parses workouts stored in persistent storage for easy display by MenuLayer. 
+*/
 void win_main_parse_workouts() {
   LOG("Win main parse workout");
 

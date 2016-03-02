@@ -1,3 +1,10 @@
+/* 
+Workout Finished Window | Custom Workout Timer. v4.0
+Congratulates user when a workout is completed. 
+Copyright © 2016 Fernando Trujano
+                 trujano@mit.edu
+*/
+
 #include <pebble.h>
 #include "win_workout_finished.h"
 

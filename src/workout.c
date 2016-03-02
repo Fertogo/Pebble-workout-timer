@@ -22,7 +22,8 @@ Move* restore_move(Workout* workout);
 
 /**
 * Add given move to the end of given workout
-*
+* @param Wokout* workout: Workout to add move to
+* @param Move* move: Move to add to Workout
 */
 void workout_add_move(Workout* workout, Move* move) {
   LOG("Adding move to workout");
@@ -30,6 +31,11 @@ void workout_add_move(Workout* workout, Move* move) {
   linked_list_append(workout->moves, move);
 }
 
+/**
+* Start given workout at it's current location
+*             workout location will be restored if saved_moved exists
+* @param Workout* workout: workout to start
+*/
 void workout_start(Workout* workout){
   LOG("Starting workout");
 
@@ -48,6 +54,10 @@ void workout_start(Workout* workout){
   saved_move = NULL; //Reset saved move; 
 }
 
+/**
+* Restores first move from given Workout
+* @parma Workout* workout: workout to restore move from
+*/ 
 Move* restore_move(Workout* workout) {
   // Saved move is done! 
   if (launch_reason() == APP_LAUNCH_WAKEUP){ 
@@ -94,7 +104,11 @@ Move* restore_move(Workout* workout) {
 }
 
 
-
+/**
+* Handles event when a move is finished. 
+*     Either advances to next move or finishes workout
+* @param Move* move: move that recently finished
+*/
 void workout_move_finished(Move* move) {
 
   LOG("Move just finished");
@@ -118,6 +132,10 @@ void workout_move_finished(Move* move) {
 
 
 
+/**
+* Handles when a workout is finished
+* @param Workout* workout: Workout that recently finished
+*/
 static void workout_finished(Workout* workout){
   LOG("Workout Finished");
   message_helper_finish_workout(workout);
@@ -127,6 +145,10 @@ static void workout_finished(Workout* workout){
   free(workout);
 }
 
+/**
+* Completely stops the given workout
+* @param Workout* workout: Workout to stop
+*/
 void workout_stop(Workout* workout) { 
   saved_move = NULL; 
   free(workout); 
@@ -158,7 +180,14 @@ char* workout_get_next_move_name(Move* current_move){
   return next_move->name;
 }
 
-//Called with response from phone after requesting a workout
+//TODO These parse functions do too much and should be split. 
+//Parse functions should return what they parse ie Workout* or Move*
+
+/**
+* Parses workout messages from phone and starts workout 
+* @param char* header: header of message sent from phone
+* @param LinkedRoot* data: LinkedList with message data
+*/
 void workout_parse_message(char*header, LinkedRoot* data) {
   LOG("Parsing Move Message");
 
@@ -172,6 +201,11 @@ void workout_parse_message(char*header, LinkedRoot* data) {
   workout_start(workout);
 }
 
+/**
+* Parses move section of workout messages from phone and adds move to given Workout. 
+* @param char* header: header of message sent from phone
+* @param LinkedRoot* data: LinkedList with message data
+*/
 void parse_moves_message(Workout* workout, LinkedRoot* data) {
   INFO("Move data received");
 
@@ -200,6 +234,11 @@ void parse_moves_message(Workout* workout, LinkedRoot* data) {
   win_main_refresh();
 }
 
+/**
+* Creates and initalizes a new workout with the given name
+* @param char* name: Name of workout
+* @returns Workout*: Created Workout struct
+*/
 Workout* workout_create(char* name) {
   Workout* workout = malloc(sizeof(Workout));
   strcpy(workout->name, name);
@@ -209,6 +248,10 @@ Workout* workout_create(char* name) {
   return workout;
 }
 
+/**
+* Save the state of the given move to persistent memmory and schedule wakeup if necessary. 
+* @param Move* move: Move to save state
+*/
 void workout_save_current_move(Move* move) { 
   SavedMove* saved_move = malloc(sizeof(SavedMove));
   strcpy(saved_move->workout_name, move->workout->name); 
@@ -233,6 +276,9 @@ void workout_save_current_move(Move* move) {
   free(saved_move); 
 }
 
+/**
+* Restores workout if needed
+*/ 
 void workout_restore() { 
   LOG("Restore move?");
   saved_move = storage_get_current_move(); 
@@ -243,7 +289,10 @@ void workout_restore() {
   }
 }
 
-//Debug function
+/**
+* Debug function to print workout contents
+* @param Workout* workout: Workout to print
+*/
 void workout_print(Workout* workout) { 
   LOG("Workout. Name: %s, Current_move_index: %i, Total_moves: %i", workout->name, workout->current_move_index, linked_list_count(workout->moves));
 }

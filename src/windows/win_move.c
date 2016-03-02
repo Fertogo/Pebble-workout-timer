@@ -1,3 +1,10 @@
+/* 
+Move Window | Custom Workout Timer. v4.0
+Displays Move information during a workout. Handles ActionBar actions. 
+Copyright © 2016 Fernando Trujano
+                 trujano@mit.edu
+*/
+
 #include <pebble.h>
 #include "win_move.h"
 #include "win_main.h"
@@ -113,6 +120,10 @@ static void destroy_ui(void) {
 }
 // END AUTO-GENERATED UI CODE
 
+/**
+* Sets the move this window should be displaying
+* @param Move* move_win: Move to set
+*/
 void win_move_set_move(Move* move_win) {
   win_move_hide_pause();
   move = move_win;
@@ -126,7 +137,6 @@ void win_move_set_move(Move* move_win) {
      max_height = layer_get_frame(text_layer_get_layer(move_name)).size.h;
      if (text_layer_get_content_size(move_name).h >= max_height)  text_layer_set_font(move_name, s_res_gothic_18_bold);
   }
-
 
   //Type specific setup
   if (move->type == MOVE_TYPE_TIMER) setup_timer_move();
@@ -217,12 +227,19 @@ static void handle_window_unload(Window* window) {
   destroy_ui();
 }
 
-
+/**
+* Set the value of the moved displayed in the window 
+* @param char* move_value: value to show to the user
+*/
 void win_move_set_value(char * new_value) {
   LOG("Winmove set value");
   text_layer_set_text(move_value, new_value);
 }
 
+/**
+* Displays given move name to users as next move
+* @param char* name: move to display. 
+*/
 void win_move_set_next_move_name(char* name){
   text_layer_set_text(next_move_name, name);
 
@@ -266,9 +283,17 @@ void show_win_move(void) {
 void hide_win_move(void) {
   window_stack_remove(s_window, true);
 }
+
+/**
+* Show paused message to the user
+*/
 void win_move_show_pause() {
   text_layer_set_text(paused_text, "Paused");
 }
+
+/**
+* Hide paused message from user
+*/ 
 void win_move_hide_pause(){
   text_layer_set_text(paused_text, "\0"); //Empty String
 }
