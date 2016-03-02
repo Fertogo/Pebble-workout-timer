@@ -1,5 +1,5 @@
 /* 
-Message helper of Custom Workout Timer. v4.0
+Message helper | Custom Workout Timer. v4.0
 Enables communication between phone and Pebble by sending messages and receiving, parsing and forwarding messages. 
 Copyright © 2016 Fernando Trujano
                  trujano@mit.edu

@@ -83,6 +83,9 @@ static void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, v
 }
 
 void initialize_menu(void) {
+  #ifdef PBL_COLOR
+     menu_layer_set_highlight_colors(menu_workouts,GColorCobaltBlue ,GColorWhite );
+  #endif
   scroll_layer_set_shadow_hidden(menu_layer_get_scroll_layer(menu_workouts), false);
   menu_layer_set_callbacks(menu_workouts, NULL, (MenuLayerCallbacks){
     .get_num_sections = menu_get_num_sections_callback,
