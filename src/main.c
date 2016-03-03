@@ -5,6 +5,7 @@
 #include "windows/win_move.h"
 #include "workout.h"
 #include "windows/win_main.h"
+#include "storage.h"
 
 #include "message_helper.h"
 
@@ -21,6 +22,7 @@ int main(void) {
 
 static void init(void) {
   LOG("C Code - Init");
+  storage_init(); 
   message_helper_init();
   win_main_init();
   workout_restore();

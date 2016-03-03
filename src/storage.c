@@ -13,11 +13,14 @@ Copyright © 2016 Fernando Trujano
 
 #define PERSIST_KEY_WORKOUTS_ROOT 200
 #define PERSIST_SAVED_MOVE 100
+#define PERSIST_STORAGE_VERSION 1 
 
 
 char* storage_get(int key);
 void storage_set(int key, char* data);
 static void clear_storage();
+static void clear_v3_storage(); 
+void storage_migrate_v_3(); 
 
 /**
 * Processes workout messages, stores workouts on Pebble and updates UI
@@ -125,5 +128,37 @@ SavedMove* storage_get_current_move() {
 void storage_reset_current_move() { 
   if (persist_exists(PERSIST_SAVED_MOVE)) { 
     persist_delete(PERSIST_SAVED_MOVE); 
+  }
+}
+
+/**
+* Initializes persistant storage
+*/
+void storage_init() { 
+  LOG("Initializing Storage"); 
+  storage_migrate_v_3(); 
+  storage_set(PERSIST_STORAGE_VERSION,"4"); 
+}
+
+/**
+* Migrates storage between v3 to v4
+*/
+void storage_migrate_v_3(){ 
+  if (storage_get(0) != NULL) { 
+    LOG("There is v3 data"); 
+    clear_v3_storage();
+  }
+}
+
+/**
+* Clears all storage that v3.x used 
+*/
+void clear_v3_storage() { 
+  //Should delete all keys in range [0,21], [337,344]
+  for (int i=0; i<30; i++) { 
+    if (persist_exists(i)) persist_delete(i); 
+  }
+   for (int i=330; i<350; i++) { 
+    if (persist_exists(i)) persist_delete(i); 
   }
 }

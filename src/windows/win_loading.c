@@ -1,3 +1,10 @@
+/* 
+Loading Window | Custom Workout Timer. v4.0
+Shows loading and error messages to user when necessary. 
+Copyright © 2016 Fernando Trujano
+                 trujano@mit.edu
+*/
+
 #include <pebble.h>
 #include "win_loading.h"
 

@@ -11,3 +11,5 @@ void storage_set(int key, char* data);
 void storage_save_current_move(SavedMove* saved_move); 
 SavedMove* storage_get_current_move(); 
 void storage_reset_current_move(); 
+
+void storage_init(); 

@@ -1,3 +1,10 @@
+/* 
+Instructions Window | Custom Workout Timer. v4.0
+Shows Instructions to user on first launch
+Copyright © 2016 Fernando Trujano
+                 trujano@mit.edu
+*/
+
 #include <pebble.h>
 #include "win_instructions.h"
 
