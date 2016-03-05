@@ -11,8 +11,10 @@ Copyright © 2016 Fernando Trujano
 var VERSION = "4.0";
 var MESSAGE_DELIMITER = "\t"; 
 var MESSAGE_DATA_ROOT = 2; 
-
 var MESSAGE_CHUNK_LENGTH = 25;
+
+var MAX_MOVE_NAME_LENGTH = 39; 
+var MAX_WORKOUT_NAME_LENGTH = 29; 
 
 console.log(Pebble.getActiveWatchInfo().platform); 
 if (Pebble.getActiveWatchInfo().platform === "aplite") MESSAGE_CHUNK_LENGTH = 25; 
@@ -69,7 +71,7 @@ function sendWorkout(workoutName, moves) {
   //Split each message into chunks. 
   for (i=0; i<len_i; i+=MESSAGE_CHUNK_LENGTH) { 
     
-    messageHeader= [workoutName, Math.round(i/MESSAGE_CHUNK_LENGTH), numMessagesToSend].join(MESSAGE_DELIMITER); //Format: | WorkoutName | Message # | Total # of messages to expect |
+    messageHeader= [safeWorkoutName(workoutName), Math.round(i/MESSAGE_CHUNK_LENGTH), numMessagesToSend].join(MESSAGE_DELIMITER); //Format: | WorkoutName | Message # | Total # of messages to expect |
     message = {}; 
     
     chunk = moves.slice(i, i+MESSAGE_CHUNK_LENGTH);
@@ -78,7 +80,7 @@ function sendWorkout(workoutName, moves) {
     //Add each move in chunk to message
     for (j=0, len_j=chunk.length; j<len_j; j++) { 
       move = chunk[j]; 
-      message[messageIndex] = [move.name, move.type, move.value].join(MESSAGE_DELIMITER); 
+      message[messageIndex] = [safeMoveName(move.name), move.type, move.value].join(MESSAGE_DELIMITER); 
       messageIndex++; 
       console.log("constructing message");
     }
@@ -87,6 +89,7 @@ function sendWorkout(workoutName, moves) {
   }
   
 }
+
 
 /**
 * Parses workout, save them to localStorage and send titles to Pebble
@@ -211,6 +214,25 @@ function parsePebbleMessage(e) {
         if (type === 'WORKOUT') workoutMessageHandler(e.payload[type]); 
         if (type === 'WORKOUT_DONE') workoutDoneMessageHandler(e.payload[type]);           
     }
+}
+
+
+/**
+* Returns a move name that can be safely sent to Pebble
+* @param string moveName. Move to "sanitize"
+*/
+function safeMoveName(moveName) { 
+  if (moveName.length <= MAX_MOVE_NAME_LENGTH) return moveName; 
+  return moveName.slice(0,MAX_MOVE_NAME_LENGTH); 
+}
+
+/**
+* Returns a workout name that can be safely sent to Pebble
+* @param string workoutName. Workout to "sanitize"
+*/
+function safeWorkoutName(workoutName) { 
+  if (workoutName.length <= MAX_WORKOUT_NAME_LENGTH) return workoutName; 
+  return workoutName.slice(0,MAX_WORKOUT_NAME_LENGTH); 
 }
 
 Pebble.addEventListener("appmessage", parsePebbleMessage);
