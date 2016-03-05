@@ -1,6 +1,12 @@
 Pebble-workout-timer
 ===================
 ###Changelog
+* **v4.0**
+   * Rewite Pebble Code
+     * Redesigned Message Protocol
+       * No phone required after workout start
+     * Much faster and battery friendly
+   * Miscellaneous bug fixes
 * **v3.5**
    * Online Workout Manager
      * Completely remade backend in node.js
