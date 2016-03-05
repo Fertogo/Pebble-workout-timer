@@ -76,7 +76,7 @@ static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuI
 
   switch(cell_index->section){
     case 0:
-      menu_cell_basic_draw(ctx, cell_layer, workouts_info[cell_index->row], "TestMenu", NULL);
+      menu_cell_basic_draw(ctx, cell_layer, workouts_info[cell_index->row], "Click to start workout!", NULL);
       break;
   }
 }

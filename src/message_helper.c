@@ -71,6 +71,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     }
     if (strcmp(type,"WORKOUTS") == 0) {
       storage_store_workouts(header, data);
+      vibes_short_pulse();
     }
 
   }

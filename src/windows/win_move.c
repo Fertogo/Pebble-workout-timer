@@ -42,10 +42,10 @@ static GBitmap *s_res_play_pause_button;
 static GBitmap *s_res_next_button;
 static TextLayer *move_value;
 static TextLayer *next_move_name;
-static TextLayer *paused_text;
 static TextLayer *move_name;
 static ActionBarLayer *move_controls;
 static TextLayer *next;
+static TextLayer *paused_text;
 
 static void initialise_ui(void) {
   s_window = window_create();
@@ -74,14 +74,6 @@ static void initialise_ui(void) {
   text_layer_set_font(next_move_name, s_res_gothic_14);
   layer_add_child(window_get_root_layer(s_window), (Layer *)next_move_name);
   
-  // paused_text
-  paused_text = text_layer_create(GRect(0, 121, 115, 22));
-  text_layer_set_background_color(paused_text, GColorClear);
-  text_layer_set_text(paused_text, "Paused");
-  text_layer_set_text_alignment(paused_text, GTextAlignmentCenter);
-  text_layer_set_font(paused_text, s_res_roboto_condensed_21);
-  layer_add_child(window_get_root_layer(s_window), (Layer *)paused_text);
-  
   // move_name
   move_name = text_layer_create(GRect(0, 20, 115, 57));
   text_layer_set_background_color(move_name, GColorClear);
@@ -104,16 +96,24 @@ static void initialise_ui(void) {
   text_layer_set_background_color(next, GColorClear);
   text_layer_set_text(next, "Next:");
   layer_add_child(window_get_root_layer(s_window), (Layer *)next);
+  
+  // paused_text
+  paused_text = text_layer_create(GRect(0, 121, 115, 26));
+  text_layer_set_background_color(paused_text, GColorClear);
+  text_layer_set_text(paused_text, "Paused");
+  text_layer_set_text_alignment(paused_text, GTextAlignmentCenter);
+  text_layer_set_font(paused_text, s_res_roboto_condensed_21);
+  layer_add_child(window_get_root_layer(s_window), (Layer *)paused_text);
 }
 
 static void destroy_ui(void) {
   window_destroy(s_window);
   text_layer_destroy(move_value);
   text_layer_destroy(next_move_name);
-  text_layer_destroy(paused_text);
   text_layer_destroy(move_name);
   action_bar_layer_destroy(move_controls);
   text_layer_destroy(next);
+  text_layer_destroy(paused_text);
   gbitmap_destroy(s_res_stop_button);
   gbitmap_destroy(s_res_play_pause_button);
   gbitmap_destroy(s_res_next_button);
@@ -174,6 +174,7 @@ void setup_rep_move() {
   text_layer_set_text_color(next_move_name, GColorWhite);
   text_layer_set_text_color(next, GColorWhite);
 
+  text_layer_set_text(paused_text, "Rep Move");
 
   action_bar_layer_set_click_config_provider(move_controls, reps_move_controls_click_config_provider);
 }

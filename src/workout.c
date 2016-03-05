@@ -143,6 +143,7 @@ static void workout_finished(Workout* workout){
   LOG("Workout Finished");
   message_helper_finish_workout(workout);
   saved_move = NULL; //Reset saved move; 
+  vibes_double_pulse();
   show_win_workout_finished();
   hide_win_move();
   free(workout);
