@@ -52,7 +52,7 @@ static void initialise_ui(void) {
   #ifndef PBL_SDK_3
     window_set_fullscreen(s_window, true);
   #endif
-
+  
   s_res_roboto_bold_subset_49 = fonts_get_system_font(FONT_KEY_ROBOTO_BOLD_SUBSET_49);
   s_res_gothic_14 = fonts_get_system_font(FONT_KEY_GOTHIC_14);
   s_res_roboto_condensed_21 = fonts_get_system_font(FONT_KEY_ROBOTO_CONDENSED_21);
@@ -66,14 +66,14 @@ static void initialise_ui(void) {
   text_layer_set_text_alignment(move_value, GTextAlignmentCenter);
   text_layer_set_font(move_value, s_res_roboto_bold_subset_49);
   layer_add_child(window_get_root_layer(s_window), (Layer *)move_value);
-
+  
   // next_move_name
   next_move_name = text_layer_create(GRect(37, 147, 85, 15));
   text_layer_set_background_color(next_move_name, GColorClear);
   text_layer_set_text(next_move_name, "Workout dsg fg sfdg ");
   text_layer_set_font(next_move_name, s_res_gothic_14);
   layer_add_child(window_get_root_layer(s_window), (Layer *)next_move_name);
-
+  
   // paused_text
   paused_text = text_layer_create(GRect(0, 121, 115, 22));
   text_layer_set_background_color(paused_text, GColorClear);
@@ -81,7 +81,7 @@ static void initialise_ui(void) {
   text_layer_set_text_alignment(paused_text, GTextAlignmentCenter);
   text_layer_set_font(paused_text, s_res_roboto_condensed_21);
   layer_add_child(window_get_root_layer(s_window), (Layer *)paused_text);
-
+  
   // move_name
   move_name = text_layer_create(GRect(0, 20, 115, 57));
   text_layer_set_background_color(move_name, GColorClear);
@@ -89,7 +89,7 @@ static void initialise_ui(void) {
   text_layer_set_text_alignment(move_name, GTextAlignmentCenter);
   text_layer_set_font(move_name, s_res_roboto_condensed_21);
   layer_add_child(window_get_root_layer(s_window), (Layer *)move_name);
-
+  
   // move_controls
   move_controls = action_bar_layer_create();
   action_bar_layer_add_to_window(move_controls, s_window);
@@ -98,7 +98,7 @@ static void initialise_ui(void) {
   action_bar_layer_set_icon(move_controls, BUTTON_ID_SELECT, s_res_play_pause_button);
   action_bar_layer_set_icon(move_controls, BUTTON_ID_DOWN, s_res_next_button);
   layer_add_child(window_get_root_layer(s_window), (Layer *)move_controls);
-
+  
   // next
   next = text_layer_create(GRect(4, 147, 35, 18));
   text_layer_set_background_color(next, GColorClear);

@@ -41,6 +41,7 @@ typedef struct MessageData {
 */
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   LOG("Message received!");
+  LOG("Size: %i", (int)dict_size(iterator)); 
   Tuple *data_type = dict_find(iterator, MESSAGE_TYPE_INDEX);
 
   //Parse message
@@ -89,7 +90,12 @@ static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
 
 void message_helper_init() {
   LOG("Message Helper Init");
-  app_message_open(app_message_inbox_size_maximum(), APP_MESSAGE_OUTBOX_SIZE_MINIMUM + 500);
+  #ifdef PBL_PLATFORM_APLITE
+    app_message_open(1300, APP_MESSAGE_OUTBOX_SIZE_MINIMUM + 500);
+  #else
+    app_message_open(5200, APP_MESSAGE_OUTBOX_SIZE_MINIMUM + 500);
+  #endif
+
 
   // Register callbacks
   app_message_register_inbox_received(inbox_received_callback);

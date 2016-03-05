@@ -19,6 +19,7 @@ void parse_moves_message(Workout* workoout, LinkedRoot* data);
 const char MESSAGE_DELIMITER[3] = "\t";
 SavedMove* saved_move = NULL; 
 Move* restore_move(Workout* workout); 
+Workout* temp_workout = NULL; 
 
 /**
 * Add given move to the end of given workout
@@ -46,10 +47,12 @@ void workout_start(Workout* workout){
   if (first_move == NULL) return; //Handle edge case when app wakeup on last move
    
   LOG("got first move"); 
+  move_print(first_move);
 
   show_win_move();
-  move_print(first_move);
+  DEBUG("Showing win move");
   move_start(first_move); 
+  DEBUG("Started First move");
   
   saved_move = NULL; //Reset saved move; 
 }
@@ -192,13 +195,19 @@ void workout_parse_message(char*header, LinkedRoot* data) {
   LOG("Parsing Move Message");
 
   char* workout_name = strtok(header, MESSAGE_DELIMITER);
+  uint8_t message_index = atoi(strtok(NULL, MESSAGE_DELIMITER));
+  uint8_t message_total = atoi(strtok(NULL, MESSAGE_DELIMITER));
   INFO("WorkoutName: %s", workout_name);
+  INFO("Chunk %i / %i", message_index, message_total); 
+  if (message_index == 0) { //First message in the batch, create new workout
+    temp_workout = workout_create(workout_name); 
+  }
+  parse_moves_message(temp_workout, data);
+  if (message_index == message_total) { //Last message in batch, start workout
+    hide_win_loading();
+    workout_start(temp_workout);
+  }
 
-  Workout* workout = workout_create(workout_name);
-
-  parse_moves_message(workout, data);
-  hide_win_loading();
-  workout_start(workout);
 }
 
 /**

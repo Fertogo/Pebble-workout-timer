@@ -21,16 +21,19 @@
             {
                 "file": "images/Stopbtn.png",
                 "name": "STOP_BUTTON",
+                "targetPlatforms": null,
                 "type": "bitmap"
             },
             {
                 "file": "images/PausePlay.png",
                 "name": "PLAY_PAUSE_BUTTON",
+                "targetPlatforms": null,
                 "type": "bitmap"
             },
             {
                 "file": "images/Nextbtn.png",
                 "name": "NEXT_BUTTON",
+                "targetPlatforms": null,
                 "type": "bitmap"
             }
         ]
