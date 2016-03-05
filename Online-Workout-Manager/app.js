@@ -16,6 +16,7 @@ var auth = basicAuth('admin', process.env.OWM_ADMIN_PASS || 'password');
 var app = express();
 
 var mongoose = require('mongoose');
+
 db = mongoose.connect( process.env.MONGOLAB_URI_OWM || "mongodb://localhost:27017/owm");
 
 // view engine setup

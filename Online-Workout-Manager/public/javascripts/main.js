@@ -161,7 +161,7 @@ $(document).ready(function(){
             document.location = "https://apps.getpebble.com/applications/53b8f8d4c09b06bcc7000007";
         }
     }
-    else if (version < 3.2){
+    else if (version < 4.0){
         $("#update").show();
     }
     else {
