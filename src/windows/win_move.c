@@ -30,16 +30,17 @@ void initialized_custom_ui();
 static StatusBarLayer * status_bar;
 static GFont s_res_gothic_24_bold;
 static GFont s_res_gothic_18_bold;
+static GFont s_res_bitham_30_black;
 
 
 // BEGIN AUTO-GENERATED UI CODE; DO NOT MODIFY
 static Window *s_window;
-static GFont s_res_roboto_bold_subset_49;
 static GFont s_res_gothic_14;
 static GFont s_res_roboto_condensed_21;
 static GBitmap *s_res_stop_button;
 static GBitmap *s_res_play_pause_button;
 static GBitmap *s_res_next_button;
+static GFont s_res_roboto_bold_subset_49;
 static TextLayer *move_value;
 static TextLayer *next_move_name;
 static TextLayer *move_name;
@@ -53,16 +54,16 @@ static void initialise_ui(void) {
     window_set_fullscreen(s_window, true);
   #endif
   
-  s_res_roboto_bold_subset_49 = fonts_get_system_font(FONT_KEY_ROBOTO_BOLD_SUBSET_49);
   s_res_gothic_14 = fonts_get_system_font(FONT_KEY_GOTHIC_14);
   s_res_roboto_condensed_21 = fonts_get_system_font(FONT_KEY_ROBOTO_CONDENSED_21);
   s_res_stop_button = gbitmap_create_with_resource(RESOURCE_ID_STOP_BUTTON);
   s_res_play_pause_button = gbitmap_create_with_resource(RESOURCE_ID_PLAY_PAUSE_BUTTON);
   s_res_next_button = gbitmap_create_with_resource(RESOURCE_ID_NEXT_BUTTON);
+  s_res_roboto_bold_subset_49 = fonts_get_system_font(FONT_KEY_ROBOTO_BOLD_SUBSET_49);
   // move_value
-  move_value = text_layer_create(GRect(0, 68, 115, 49));
+  move_value = text_layer_create(GRect(0, 71, 115, 49));
   text_layer_set_background_color(move_value, GColorClear);
-  text_layer_set_text(move_value, "1:50");
+  text_layer_set_text(move_value, "9:50");
   text_layer_set_text_alignment(move_value, GTextAlignmentCenter);
   text_layer_set_font(move_value, s_res_roboto_bold_subset_49);
   layer_add_child(window_get_root_layer(s_window), (Layer *)move_value);
@@ -235,6 +236,20 @@ static void handle_window_unload(Window* window) {
 void win_move_set_value(char * new_value) {
   LOG("Winmove set value");
   text_layer_set_text(move_value, new_value);
+  
+  //Adjust font size 
+  Layer *window_layer = window_get_root_layer(s_window);
+  int16_t window_size = layer_get_bounds(window_layer).size.w - ACTION_BAR_WIDTH;
+  text_layer_set_font(move_value, s_res_roboto_bold_subset_49);
+  LOG("Space: %i / %i", text_layer_get_content_size(move_value).w, window_size); 
+
+  if ( text_layer_get_content_size(move_value).w >= window_size - 5) { 
+    // Move Value too big, make font smaller
+    LOG("Making font smaller"); 
+    text_layer_set_font(move_value,  s_res_bitham_30_black); 
+    
+  }
+
 }
 
 /**
@@ -267,7 +282,10 @@ void win_move_set_next_move_name(char* name){
 void initialize_custom_ui() {
   s_res_gothic_24_bold = fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD);
   s_res_gothic_18_bold = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
+  s_res_bitham_30_black = fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK);
+
   text_layer_set_overflow_mode(move_name, GTextOverflowModeWordWrap);
+  text_layer_set_overflow_mode(move_value, GTextOverflowModeWordWrap); 
   status_bar = status_bar_layer_create();
 }
 
