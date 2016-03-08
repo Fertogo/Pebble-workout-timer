@@ -1,6 +1,9 @@
 Pebble-workout-timer
 ===================
 ###Changelog
+* **v4.1**
+    * Fixes bug where configuration page would not show on some devices
+    * Fixes UI bug where long move values would get cut off
 * **v4.0**
    * Rewite Pebble Code
      * Redesigned Message Protocol
