@@ -16,9 +16,9 @@ var MESSAGE_CHUNK_LENGTH = 25;
 var MAX_MOVE_NAME_LENGTH = 39; 
 var MAX_WORKOUT_NAME_LENGTH = 29; 
 
-console.log(Pebble.getActiveWatchInfo().platform); 
-if (Pebble.getActiveWatchInfo().platform === "aplite") MESSAGE_CHUNK_LENGTH = 25; 
-else MESSAGE_CHUNK_LENGTH = 100; 
+var MESSAGE_CHUNK_LENGTH; 
+
+
 //100 for Pebble Time 
 
 
@@ -29,6 +29,9 @@ var BASE_URL = 'http://pebble.fernandotrujano.com';
 Pebble.addEventListener("ready", function(e){
   console.log("JS code running!"); 
   sendMessage("READY", "none", {}); 
+  
+  if (getWatchPlatform() === "aplite") MESSAGE_CHUNK_LENGTH = 25; 
+  else MESSAGE_CHUNK_LENGTH = 100; 
 
   if (DEV_MODE) { 
     var sample_workout = '{"workouts":[{"moves":[{"name":"Move 1","value":6,"type":"time"},{"name":"Move 2","value":7,"type":"time"},{"name":"Move 3","value":7,"type":"time"}],"title":"Just Time"},{"moves":[{"name":"move 1","value":6,"type":"reps"},{"name":"move 2","value":5,"type":"reps"},{"name":"move 3","value":12,"type":"reps"}],"title":"Just reps"},{"moves":[{"name":"move 1","value":16,"type":"time"},{"name":"move 2 reps","value":4,"type":"reps"},{"name":"move 3 time","value":6,"type":"time"},{"name":"move 4 reps","value":14,"type":"reps"}],"title":"Both"}]}'; 
@@ -233,6 +236,14 @@ function safeMoveName(moveName) {
 function safeWorkoutName(workoutName) { 
   if (workoutName.length <= MAX_WORKOUT_NAME_LENGTH) return workoutName; 
   return workoutName.slice(0,MAX_WORKOUT_NAME_LENGTH); 
+}
+
+/**
+* Safely get the platform of the running watch
+* @returns String representing platform
+*/ 
+function getWatchPlatform() { 
+  return Pebble.getActiveWatchInfo ? Pebble.getActiveWatchInfo().platform : "aplite"; 
 }
 
 Pebble.addEventListener("appmessage", parsePebbleMessage);
