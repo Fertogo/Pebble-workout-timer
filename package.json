@@ -1,0 +1,50 @@
+{
+  "name": "Custom Workout Timer",
+  "author": "Fernando Trujanoaaa",
+  "version": "4.1",
+  "keywords": [],
+  "private": true,
+  "dependencies": {},
+  "pebble": {
+    "displayName": "Pebble-workout-timer",
+    "uuid": "2add7054-08bc-4dda-b4d8-28f22f3d7ec2",
+    "sdkVersion": "3",
+    "enableMultiJS": true,
+    "targetPlatforms": [
+      "aplite",
+      "basalt"
+    ],
+    "capabilities": [ "configurable" ],
+    "watchapp": {
+      "watchface": false
+    },
+    "messageKeys": [
+      "dummy"
+    ],
+    "resources": {
+      "media": [
+        {
+          "menuIcon": true,
+          "type": "png",
+          "name": "IMAGE_MENU_ICON",
+          "file": "images/menuicon.png"
+        },
+        {
+          "file": "images/Stopbtn.png",
+          "name": "STOP_BUTTON",
+          "type": "png"
+        },
+        {
+          "file": "images/PausePlay.png",
+          "name": "PLAY_PAUSE_BUTTON",
+          "type": "png"
+        },
+        {
+          "file": "images/Nextbtn.png",
+          "name": "NEXT_BUTTON",
+          "type": "png"
+        }
+      ]
+    }
+  }
+}
