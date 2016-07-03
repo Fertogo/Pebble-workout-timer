@@ -16,20 +16,23 @@ var Workout = React.createClass({
             return (
                 <ul className="list-group">
                     <li className="list-group-item list-group-item-info" onClick={this.edit}>
-
                         <InlineEdit
                             text={this.props.workout.title}
                             onChange={this.props.renameWorkout} />
-
-                        <a onClick={this.props.removeWorkout}>remove workout</a>
+                        <div className="pull-right">
+                            <button type="button" className="btn btn-link btn-xs" onClick={this.props.removeWorkout}>
+                                <span className="glyphicon glyphicon-trash"></span>
+                            </button>
+                        </div>
                     </li>
 
                     {this.props.workout.moves.map(function (object, i) {
-                        return <MoveHolder key={i} move={object}
+                        return <MoveHolder key={i} move={object} keyId={i}
                                            removeMove={this.props.removeMove.bind(this, i)}
                                            addMove={this.props.addMove.bind(this, i)}
                                            copyMove={this.props.copyMove.bind(this, i)}
                                            editMove={this.props.editMove.bind(this, i)}
+                                           moveMove={this.props.moveMove.bind(this, i)}
                         />
                     }, this)}
 

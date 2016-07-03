@@ -39,7 +39,8 @@ Pebble.addEventListener("ready", function(e){
 
 Pebble.addEventListener("showConfiguration", function(){ 
   console.log("Showing Configuration v" + VERSION);
-  Pebble.openURL(BASE_URL + "/user/home?info=" + Pebble.getAccountToken() + "," + VERSION);
+  //Pebble.openURL(BASE_URL + "/user/home?info=" + Pebble.getAccountToken() + "," + VERSION);
+  Pebble.openURL(BASE_URL + "/layout.html?info=" + Pebble.getAccountToken() + "," + VERSION);
 });
 
 /**

@@ -2,6 +2,8 @@
 var React = require('react');
 var Workout = require('./Workout');
 var $ = require('jquery');
+var DragDropContext = require('react-dnd').DragDropContext;
+var HTML5Backend = require('react-dnd-html5-backend');
 
 var WorkoutList = React.createClass({
     getInitialState: function() {
@@ -21,6 +23,7 @@ var WorkoutList = React.createClass({
         });
     },
     handleSave:function(){
+        var w = {workouts: this.state.workouts};
         $.ajax({
             method: "PUT",
             url: '/user/workout/save',
@@ -30,14 +33,16 @@ var WorkoutList = React.createClass({
             },
             processData: true,
             success: function(data, textStatus, jqXHR){
-                //document.location = "pebblejs://close#" +encodeURIComponent(JSON.stringify(json)) ;
+                document.location = "pebblejs://close#" +encodeURIComponent(JSON.stringify(w));
             },
             error: function(xhr, status, err) {
                 console.error(this.props.url, status, err.toString());
             }.bind(this)
         });
     },
-    handleCancel:function(){},
+    handleCancel:function(){
+        document.location = "pebblejs://close#";
+    },
     removeWorkout:function(workoutKey){
         var w = this.state.workouts;
         w.splice(workoutKey, 1);
@@ -68,6 +73,12 @@ var WorkoutList = React.createClass({
         w[workoutKey].moves.push({name:"new move", type:"reps", value:"0"});
         this.setState({workouts: w});
     },
+    moveMove: function(workoutKey, targetMoveKey, moveKey){
+        var w = this.state.workouts;
+        var dragged = w[workoutKey].moves.splice(moveKey, 1);
+        w[workoutKey].moves.splice(targetMoveKey, 0, dragged[0]);
+        this.setState({workouts: w});
+    },
     copyMove:function(workoutKey, moveKey){
         var w = this.state.workouts;
         var copy = w[workoutKey].moves[moveKey];
@@ -85,6 +96,7 @@ var WorkoutList = React.createClass({
                                     copyMove={this.copyMove.bind(this, i)}
                                     renameWorkout={this.renameWorkout.bind(this, i)}
                                     editMove={this.editMove.bind(this, i)}
+                                    moveMove={this.moveMove.bind(this, i)}
                     />
                 }, this)}
 
@@ -104,4 +116,4 @@ var WorkoutList = React.createClass({
     }
 });
 
-module.exports = WorkoutList;
+module.exports = DragDropContext(HTML5Backend)(WorkoutList);
