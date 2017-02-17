@@ -231,18 +231,7 @@ $(document).ready(function(){
         document.location = "pebblejs://close#";
     });
 
-    $.getJSON(
-        "http://api.bitly.com/v3/shorten?callback=?",
-        {
-            "format": "json",
-            "apiKey": "R_ceb591091d2c79f818d71577d992ae28",  //Anyone can see this from "Network" so no need to hide it :(.
-            "login": "fertogo",
-            "longUrl": $(location).attr('href')
-        },
-        function(response){
-            $("#bitly-link").html('<a href="'+response.data.url+'"">'+response.data.url+'</a>');
-        }
-    );
+    $("#bitly-link").html('<a href="'+shortUrl+'"">'+shortUrl+'</a>');
 });
 
 //Analytics

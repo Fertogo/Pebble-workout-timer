@@ -1,6 +1,21 @@
 var mongoose = require('mongoose');
+var Bitly = require('bitly');
+var bitly = new Bitly(process.env.OWM_BITLY_KEY);
 
 UserController = {};
+
+var BASE_URL = "http://pebble.fernandotrujano.com";
+
+UserController.renderHome = function(req, res, next) {
+    var fullUrl = BASE_URL + req.originalUrl;
+
+    bitly.shorten(fullUrl).then(function(response){
+        res.render("workout-manager", {url:response.data.url});
+    }, function(error) {
+        console.log(error);
+        res.render("workout-manager", {});
+    });
+};
 
 UserController.getWorkouts = function(req, res, next) {
 

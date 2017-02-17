@@ -11,9 +11,7 @@ app.use(bodyParser.json());
 router.get('/:userid/:version', userController.getWorkouts);
 
 // Show the workout-manager homepage
-router.get('/home', function(req, res, next){
-  res.render("workout-manager", {});
-});
+router.get('/home', userController.renderHome);
 
 /* Save users workout */
 router.put('/workout/save', userController.saveWorkouts);
